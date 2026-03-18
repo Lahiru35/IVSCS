@@ -34,3 +34,10 @@ AI/ML: OpenCV for Object Detection, NumPy for sensor data analysis.
 Hardware Platform: Raspberry Pi / Arduino.
 
 Communication Protocols: RF (2.4GHz), SPI, I2C.
+
+![WhatsApp Image 2026-03-18 at 9 57 23 PM](https://github.com/user-attachments/assets/a62538be-6172-473c-bd0c-fa7409798f14)
+
+![WhatsApp Image 2026-03-18 at 9 58 21 PM](https://github.com/user-attachments/assets/ef5a175e-6858-4ec9-8c24-d16ad53c2823)
+
+
+
