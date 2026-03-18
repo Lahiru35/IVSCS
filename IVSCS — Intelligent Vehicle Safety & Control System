@@ -1,0 +1,38 @@
+# IVSCS — Intelligent Vehicle Safety & Control System
+
+An interactive browser dashboard simulating the four layers of the IVSCS:
+
+| Layer | Description |
+|-------|-------------|
+| **01 — Sensing** | Real-time wheel grip, vibration, ultrasonic distance, camera object detection |
+| **02 — AI Processing** | Radar view, collision-risk ring, AI decision log |
+| **03 — Action** | ECU torque control, smart braking, anti-skid, safety balloon deployment |
+| **04 — Workflow** | 5-step logic flow highlighted in real time |
+
+## Getting Started
+
+Open `index.html` directly in any modern browser — no build step required.
+
+## File Structure
+
+```
+IVSCS/
+├── index.html          Main HTML shell & layout
+├── css/
+│   └── style.css       All styles, variables, animations
+└── js/
+    ├── state.js        Central vehicle state object
+    ├── radar.js        Canvas radar renderer
+    ├── ui.js           DOM update functions & AI log
+    ├── scenarios.js    Four simulation scenarios
+    └── main.js         Boot, clock, noise, animation loop
+```
+
+## Scenarios
+
+| Button | What happens |
+|--------|-------------|
+| **Normal** | Baseline cruise with gentle sensor noise |
+| **Slippery** | Icy road — anti-skid + ECU torque reduction engage |
+| **Object** | Pedestrian detected — emergency brake → safe stop |
+| **Rear Hit** | Rear collision imminent — safety balloon deploys |
