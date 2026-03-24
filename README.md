@@ -767,15 +767,7 @@ MIT License — free to use, modify, and build upon.
     <span class="rm-tag" style="background:#E1F5EE;color:#085041">Cost: Rs. 15,000–25,000 · First product</span>
   </div>
 
-  <div class="rm-item">
-    <div class="rm-dot" style="background:#FAECE7;border-color:#993C1D"></div>
-    <div class="rm-line"></div>
-    <div class="rm-phase" style="color:#993C1D">MONTH 6+</div>
-    <div class="rm-title">Apply for Sri Lanka innovation grants / competitions</div>
-    <div class="rm-desc">ICTA (ICT Agency Sri Lanka), SLTDA tech grants, University of Moratuwa startup competitions, Asia-Pacific ICT Alliance awards. With a working prototype and GitHub portfolio, you have a real submission. Prize money + visibility + mentorship.</div>
-    <span class="rm-tag" style="background:#FAECE7;color:#712B13">Cost: Rs. 0 · Potential funding</span>
-  </div>
-
+  
 </div>
 <div class="tip">The single most important next step: make a demo video this week. It costs nothing and it shows the world what you have built. Everything else follows from visibility.</div>
 </div>
@@ -798,3 +790,32 @@ function tog(id){
 }
 </script>
 
+
+
+🛠️ Engineering Resilience: Heat Management & Wear Durability
+Integrating a sensor grid within a tire’s structure presents unique engineering challenges. The IVSCS is designed to remain functional despite high temperatures and physical degradation (tire wear).
+
+1. Thermal Resilience & Sensor Integrity
+Tires typically operate between 60°C and 90°C during high-speed driving. To ensure the "Sensor Rods" remain operational:
+
+Encapsulation (Thermal Shielding): Each sensor is encased in a heat-resistant Silicone or Ceramic-based coating. This prevents direct thermal conduction from the rubber to the sensitive electronics.
+
+Curie Point Optimization: The piezoelectric materials used are selected for a Curie Temperature exceeding 150°C, ensuring that the sensors do not lose their electromagnetic or electrical properties during intense driving cycles.
+
+2. Strategic Wear: The "Sacrificial Sensor" Concept
+Unlike traditional sensors that fail when damaged, the IVSCS grid is designed to wear down proportionally with the tire tread.
+
+Signal Calibration for Tread Depth: As the sensor rods wear down, the electrical signal amplitude changes.
+
+Example: A full-length sensor may output 5V, while a sensor worn down by 50% outputs 2.5V.
+
+Predictive Maintenance Advantage: This signal degradation is used as a data point to calculate Real-time Tread Depth with millimeter precision, notifying the user exactly when a tire replacement is needed before it becomes a safety hazard.
+
+3. Mitigating Signal Interference & Noise
+To maintain data accuracy as the tire's physical state changes, the system employs three critical strategies:
+
+Differential Sensing (Redundancy): Sensors are placed at multiple points across the tire. The AI uses an averaging algorithm so that if one sensor is damaged by a road hazard, the others maintain the integrity of the data stream.
+
+Adaptive AI Logic (Signal Filtering): The Python backend utilizes Kalman Filters and adaptive logic to filter out "thermal noise" as temperatures rise, ensuring that the grip-level calculation remains accurate.
+
+Inductive Coupling (Wireless Data): To eliminate the risk of wire fatigue or snapping, data is transmitted from the rotating tire to the vehicle’s ECU via Inductive Coupling (Magnetic Fields), creating a completely wireless and friction-free communication bridge.
