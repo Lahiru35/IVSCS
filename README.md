@@ -315,7 +315,7 @@ Designed and developed as a personal research and engineering project exploring 
 
 ---
 
-## 📄 License hh ivscs
+## 📄 License hh ivscs nn
 
 MIT License — free to use, modify, and build upon.
 
