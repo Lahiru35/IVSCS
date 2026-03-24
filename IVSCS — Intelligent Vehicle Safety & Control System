@@ -36,3 +36,270 @@ IVSCS/
 | **Slippery** | Icy road — anti-skid + ECU torque reduction engage |
 | **Object** | Pedestrian detected — emergency brake → safe stop |
 | **Rear Hit** | Rear collision imminent — safety balloon deploys |
+
+
+
+
+# IVSCS — Intelligent Vehicle Safety & Control System
+
+An interactive browser dashboard simulating the four layers of the IVSCS:
+
+| Layer | Description |
+|-------|-------------|
+| **01 — Sensing** | Real-time wheel grip, vibration, ultrasonic distance, camera object detection |
+| **02 — AI Processing** | Radar view, collision-risk ring, AI decision log |
+| **03 — Action** | ECU torque control, smart braking, anti-skid, safety balloon deployment |
+| **04 — Workflow** | 5-step logic flow highlighted in real time |
+
+## Getting Started
+
+Open `index.html` directly in any modern browser — no build step required.
+
+## File Structure
+
+```
+IVSCS/
+├── index.html          Main HTML shell & layout
+├── css/
+│   └── style.css       All styles, variables, animations
+└── js/
+    ├── state.js        Central vehicle state object
+    ├── radar.js        Canvas radar renderer
+    ├── ui.js           DOM update functions & AI log
+    ├── scenarios.js    Four simulation scenarios
+    └── main.js         Boot, clock, noise, animation loop
+```
+
+## Scenarios
+
+| Button | What happens |
+|--------|-------------|
+| **Normal** | Baseline cruise with gentle sensor noise |
+| **Slippery** | Icy road — anti-skid + ECU torque reduction engage |
+| **Object** | Pedestrian detected — emergency brake → safe stop |
+| **Rear Hit** | Rear collision imminent — safety balloon deploys |
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IVSCS — Intelligent Vehicle Safety & Control System</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Exo+2:wght@300;400;600;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+<div class="hud">
+
+  <!-- ═══════════════════════════════ HEADER ═══════════════════════════════ -->
+  <div class="header">
+    <div>
+      <div class="header-title">Intelligent Vehicle Safety &amp; Control System</div>
+      <div class="header-main">IVSCS <span style="font-size:13px;color:#6a8faf;font-weight:300">v4.2.1</span></div>
+    </div>
+    <div style="text-align:center">
+      <div id="status-badge" class="status-badge active">
+        <div class="dot pulse"></div>
+        <span id="status-text">ALL SYSTEMS NOMINAL</span>
+      </div>
+    </div>
+    <div class="time-display">
+      <div id="clock">00:00:00</div>
+      <div style="font-size:9px;color:#6a8faf;margin-top:2px">SYSTEM TIME</div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════ MAIN GRID ═══════════════════════════ -->
+  <div class="main-grid">
+
+    <!-- ── LEFT: SENSING LAYER ── -->
+    <div class="left-col">
+      <div class="panel">
+        <div class="panel-title">Layer 01 — Sensing</div>
+        <div class="sensor-grid">
+
+          <div class="sensor-item" id="s-grip">
+            <div class="sensor-label">Wheel Grip Level</div>
+            <div class="sensor-value" id="v-grip">0.87 <span>μ</span></div>
+            <div class="sensor-bar"><div class="sensor-bar-fill" id="b-grip" style="width:87%;background:#39ff14"></div></div>
+          </div>
+
+          <div class="sensor-item" id="s-vib">
+            <div class="sensor-label">Road Vibration</div>
+            <div class="sensor-value" id="v-vib">12 <span>Hz</span></div>
+            <div class="sensor-bar"><div class="sensor-bar-fill" id="b-vib" style="width:20%;background:#39ff14"></div></div>
+          </div>
+
+          <div class="sensor-item" id="s-front">
+            <div class="sensor-label">Front Distance</div>
+            <div class="sensor-value" id="v-front">48 <span>m</span></div>
+            <div class="sensor-bar"><div class="sensor-bar-fill" id="b-front" style="width:80%;background:#39ff14"></div></div>
+          </div>
+
+          <div class="sensor-item" id="s-rear">
+            <div class="sensor-label">Rear Approach Speed</div>
+            <div class="sensor-value" id="v-rear">0 <span>km/h</span></div>
+            <div class="sensor-bar"><div class="sensor-bar-fill" id="b-rear" style="width:0%;background:#39ff14"></div></div>
+          </div>
+
+          <div class="sensor-item" id="s-obj">
+            <div class="sensor-label">Object Detected</div>
+            <div class="sensor-value" id="v-obj" style="font-size:14px;padding-top:4px">CLEAR</div>
+            <div class="sensor-bar"><div class="sensor-bar-fill" id="b-obj" style="width:0%;background:#39ff14"></div></div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Scenario Buttons -->
+      <div class="panel">
+        <div class="panel-title">Simulate Scenario</div>
+        <div class="scenario-bar">
+          <button class="scen-btn active" id="scen-normal"  onclick="setScenario('normal')">Normal</button>
+          <button class="scen-btn"        id="scen-slip"    onclick="setScenario('slip')">Slippery</button>
+          <button class="scen-btn"        id="scen-obj"     onclick="setScenario('object')">Object</button>
+          <button class="scen-btn"        id="scen-rear"    onclick="setScenario('rear')">Rear Hit</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── CENTER: RADAR + AI LOG ── -->
+    <div class="center-col">
+      <div class="panel" style="flex-shrink:0">
+        <div class="panel-title">Layer 02 — AI Processing · Radar View</div>
+        <div style="display:flex;gap:16px;align-items:center;justify-content:center">
+
+          <div class="radar-wrap">
+            <canvas id="radar-canvas" width="260" height="260"></canvas>
+            <div class="scan-line"></div>
+            <div class="balloon-deployed" id="balloon">AIRBAG</div>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:10px;align-items:center">
+            <div class="risk-ring">
+              <svg width="100" height="100" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="8"/>
+                <circle cx="50" cy="50" r="42" fill="none" id="risk-arc"
+                  stroke="#39ff14" stroke-width="8"
+                  stroke-dasharray="264" stroke-dashoffset="264"
+                  stroke-linecap="round"
+                  transform="rotate(-90 50 50)"
+                  style="transition:stroke-dashoffset 0.5s,stroke 0.5s"/>
+              </svg>
+              <div><div class="risk-val" id="risk-val">0%</div></div>
+            </div>
+            <div class="risk-label">COLLISION<br>RISK</div>
+            <div style="width:80px;height:1px;background:rgba(0,229,255,0.15);margin:4px 0"></div>
+            <div style="font-size:9px;font-family:'Share Tech Mono',monospace;color:#6a8faf;letter-spacing:1px;text-align:center">SPEED</div>
+            <div style="font-size:28px;font-weight:700;font-family:'Share Tech Mono',monospace;color:#00e5ff" id="speed-val">72</div>
+            <div style="font-size:9px;font-family:'Share Tech Mono',monospace;color:#6a8faf">km/h</div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- AI Log -->
+      <div class="panel" style="flex:1">
+        <div class="panel-title">AI Decision Log</div>
+        <div id="ai-log" class="ai-log" style="height:130px;overflow-y:auto;scrollbar-width:thin">
+          <div><span class="ts">[00:00:01]</span><span class="safe">SYSTEM BOOT COMPLETE</span></div>
+          <div><span class="ts">[00:00:01]</span>Sensors initialized — 5/5 online</div>
+          <div><span class="ts">[00:00:02]</span>Road state: DRY · Grip: 0.87μ</div>
+          <div><span class="ts">[00:00:02]</span><span class="safe">Risk assessment: LOW · No action required</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── RIGHT: ACTION LAYER ── -->
+    <div class="right-col">
+      <div class="panel">
+        <div class="panel-title">Layer 03 — Action</div>
+        <div class="action-grid">
+          <div class="action-btn" id="act-ecu">
+            <div class="action-icon">⚙️</div>
+            <div class="action-name">Engine<br>Control</div>
+            <div class="action-state" id="act-ecu-s">NOMINAL</div>
+          </div>
+          <div class="action-btn" id="act-brake">
+            <div class="action-icon">🛑</div>
+            <div class="action-name">Smart<br>Braking</div>
+            <div class="action-state" id="act-brake-s">STANDBY</div>
+          </div>
+          <div class="action-btn" id="act-antiskid">
+            <div class="action-icon">🔄</div>
+            <div class="action-name">Anti-Skid<br>Control</div>
+            <div class="action-state" id="act-antiskid-s">IDLE</div>
+          </div>
+          <div class="action-btn" id="act-balloon">
+            <div class="action-icon">🎈</div>
+            <div class="action-name">Safety<br>Balloon</div>
+            <div class="action-state" id="act-balloon-s">ARMED</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Workflow -->
+      <div class="panel" style="flex:1">
+        <div class="panel-title">Layer 04 — Workflow</div>
+        <div id="workflow" style="display:flex;flex-direction:column;gap:8px">
+          <div class="wf-step" id="wf1">
+            <span class="wf-num">01</span>&nbsp;<span class="wf-lbl">MONITOR</span>&nbsp;Continuous sensor polling
+          </div>
+          <div class="wf-step" id="wf2">
+            <span class="wf-num">02</span>&nbsp;<span class="wf-lbl">CHECK</span>&nbsp;&nbsp;&nbsp;Slippery? Object?
+          </div>
+          <div class="wf-step" id="wf3">
+            <span class="wf-num">03</span>&nbsp;<span class="wf-lbl">REACT</span>&nbsp;&nbsp;&nbsp;Reduce engine torque
+          </div>
+          <div class="wf-step" id="wf4">
+            <span class="wf-num">04</span>&nbsp;<span class="wf-lbl">ACTION</span>&nbsp;Pre-charge brakes
+          </div>
+          <div class="wf-step" id="wf5">
+            <span class="wf-num">05</span>&nbsp;<span class="wf-lbl">STOP</span>&nbsp;&nbsp;&nbsp;Controlled safe halt
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /main-grid -->
+
+  <!-- ═══════════════════════════════ BOTTOM BAR ══════════════════════════ -->
+  <div class="bottom-bar">
+    <div class="stat-card">
+      <div class="stat-label">Reaction Time</div>
+      <div class="stat-val" id="s-react">18</div>
+      <div class="stat-unit">ms</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Road State</div>
+      <div class="stat-val" id="s-road" style="font-size:14px;padding-top:4px">DRY</div>
+      <div class="stat-unit">&nbsp;</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Engine Torque</div>
+      <div class="stat-val" id="s-torque">100</div>
+      <div class="stat-unit">%</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Brake Pressure</div>
+      <div class="stat-val" id="s-bpress">0</div>
+      <div class="stat-unit">bar</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Events Today</div>
+      <div class="stat-val" id="s-events">0</div>
+      <div class="stat-unit">interventions</div>
+    </div>
+  </div>
+
+</div><!-- /hud -->
+
+<script src="js/radar.js"></script>
+<script src="js/state.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/scenarios.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
+
