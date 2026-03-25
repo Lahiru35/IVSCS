@@ -38,5 +38,739 @@ IVSCS/
 | **Rear Hit** | Rear collision imminent — safety balloon deploys |
 
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IVSCS — Intelligent Vehicle Safety & Control System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Exo+2:wght@300;400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    /* ==============================================================
+       SECTION 1 — CSS VARIABLES (colour theme)
+       All colours defined here. Change these to restyle everything.
+    ============================================================== */
+    :root {
+      --accent:  #00e5ff;   /* cyan — main highlight */
+      --accent2: #ff6b35;   /* orange — active actions */
+      --accent3: #39ff14;   /* green — safe state */
+      --warn:    #ffd600;   /* yellow — warning */
+      --danger:  #ff1744;   /* red — critical */
+      --bg:      #040d1a;   /* page background */
+      --panel:   #071428;   /* panel background */
+      --panel2:  #0a1f3d;   /* inner panel background */
+      --border:  rgba(0,229,255,0.15);
+      --text:    #c8e6f7;
+      --mono:    'Share Tech Mono', monospace;
+      --sans:    'Exo 2', sans-serif;
+    }
 
+    /* ==============================================================
+       SECTION 2 — RESET & BASE
+    ============================================================== */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: var(--sans); min-height: 100vh; overflow-x: hidden; }
+
+    /* ==============================================================
+       SECTION 3 — ANIMATIONS
+       pulse      = fade in/out  (status dot, warning badges)
+       spin       = full 360 rotation  (radar scan line)
+       float      = gentle bob up/down  (deployed balloon)
+       warn-flash = red background flash  (danger state)
+       slide-in   = slide from right  (new log entries)
+    ============================================================== */
+    @keyframes pulse      { 0%,100%{opacity:1}  50%{opacity:.4} }
+    @keyframes spin       { to{transform:rotate(360deg)} }
+    @keyframes float      { 0%,100%{transform:translateY(0)}  50%{transform:translateY(-4px)} }
+    @keyframes warn-flash { 0%,100%{background:rgba(255,23,68,0.15)}  50%{background:rgba(255,23,68,0.4)} }
+    @keyframes slide-in   { from{transform:translateX(100%);opacity:0}  to{transform:translateX(0);opacity:1} }
+
+    /* ==============================================================
+       SECTION 4 — PAGE LAYOUT
+       HUD = 3-row grid: header / main content / bottom bar
+       main-grid = 3 columns: left sensors / centre radar / right actions
+    ============================================================== */
+    .hud { display: grid; grid-template-rows: auto 1fr auto; min-height: 100vh; padding: 12px; gap: 10px; }
+    .main-grid { display: grid; grid-template-columns: 280px 1fr 280px; gap: 10px; }
+    .left-col, .right-col { display: flex; flex-direction: column; gap: 10px; }
+    .center-col           { display: flex; flex-direction: column; gap: 10px; align-items: center; }
+
+    /* ==============================================================
+       SECTION 5 — HEADER
+    ============================================================== */
+    .header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 20px; background: var(--panel);
+      border: 1px solid var(--border); border-radius: 8px;
+      position: relative; overflow: hidden;
+    }
+    .header::before { /* animated glowing top line */
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+      animation: pulse 2s infinite;
+    }
+    .header-title { font-size: 11px; letter-spacing: 3px; color: var(--accent); font-family: var(--mono); text-transform: uppercase; }
+    .header-main  { font-size: 20px; font-weight: 700; color: #fff; letter-spacing: 1px; }
+    .time-display { font-family: var(--mono); font-size: 13px; color: var(--accent); text-align: right; }
+
+    /* Status badge — JS changes class to .active / .warning / .danger */
+    .status-badge { display: flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 20px; font-size: 11px; font-family: var(--mono); letter-spacing: 1px; border: 1px solid; }
+    .status-badge.active  { color: var(--accent3); border-color: var(--accent3); background: rgba(57,255,20,0.08); }
+    .status-badge.warning { color: var(--warn);    border-color: var(--warn);    background: rgba(255,214,0,0.08); animation: pulse 1s infinite; }
+    .status-badge.danger  { color: var(--danger);  border-color: var(--danger);  animation: warn-flash 0.5s infinite; }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+    .dot.pulse { animation: pulse 1s infinite; }
+
+    /* ==============================================================
+       SECTION 6 — PANELS (reusable dark card)
+    ============================================================== */
+    .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 14px; position: relative; overflow: hidden; }
+    .panel-title { font-size: 9px; letter-spacing: 3px; color: var(--accent); font-family: var(--mono); text-transform: uppercase; margin-bottom: 14px; display: flex; align-items: center; gap: 6px; }
+    .panel-title::before { content: ''; display: block; width: 3px; height: 12px; background: var(--accent); border-radius: 2px; }
+
+    /* ==============================================================
+       SECTION 7 — SENSOR ITEMS (left column)
+       Each shows a label, large value, and a coloured bar.
+       Border and bar colour change with .warning / .danger class.
+    ============================================================== */
+    .sensor-grid { display: grid; gap: 10px; }
+    .sensor-item { background: var(--panel2); border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; cursor: pointer; transition: border-color 0.2s, background 0.2s; }
+    .sensor-item:hover   { border-color: var(--accent); background: rgba(0,229,255,0.05); }
+    .sensor-item.warning { border-color: var(--warn); }
+    .sensor-item.danger  { border-color: var(--danger); animation: warn-flash 1s infinite; }
+    .sensor-label { font-size: 9px; letter-spacing: 2px; color: #6a8faf; font-family: var(--mono); text-transform: uppercase; margin-bottom: 6px; }
+    .sensor-value { font-size: 22px; font-weight: 700; font-family: var(--mono); line-height: 1; }
+    .sensor-value span { font-size: 11px; font-weight: 400; color: #6a8faf; margin-left: 3px; }
+    .sensor-bar      { height: 3px; background: rgba(255,255,255,0.08); border-radius: 2px; margin-top: 8px; overflow: hidden; }
+    .sensor-bar-fill { height: 100%; border-radius: 2px; transition: width 0.5s ease, background 0.3s; }
+
+    /* ==============================================================
+       SECTION 8 — RADAR (centre column)
+       Canvas is drawn by drawRadar() in JavaScript.
+       .scan-line div rotates via the CSS spin animation.
+    ============================================================== */
+    .radar-wrap   { position: relative; width: 260px; height: 260px; flex-shrink: 0; }
+    #radar-canvas { position: absolute; top: 0; left: 0; }
+    .scan-line { position: absolute; top: 0; left: 50%; width: 50%; height: 2px; background: linear-gradient(90deg, transparent, var(--accent)); transform-origin: left center; animation: spin 3s linear infinite; opacity: 0.7; }
+
+    /* ==============================================================
+       SECTION 9 — RISK RING (SVG circle)
+       stroke-dashoffset on #risk-arc is set by JS to show 0–100%
+       264 = circumference of the circle (2π × r = 2π × 42 ≈ 264)
+    ============================================================== */
+    .risk-ring { display: flex; align-items: center; justify-content: center; position: relative; width: 100px; height: 100px; margin: 0 auto 10px; }
+    .risk-ring svg { position: absolute; top: 0; left: 0; }
+    .risk-val   { font-size: 24px; font-weight: 700; font-family: var(--mono); text-align: center; }
+    .risk-label { font-size: 9px; letter-spacing: 2px; color: #6a8faf; font-family: var(--mono); text-align: center; }
+
+    /* ==============================================================
+       SECTION 10 — AI LOG
+       New entries use slide-in animation; max 20 entries kept.
+       Colours: .ts = timestamp, .cmd = command, .safe/.warn/.err
+    ============================================================== */
+    .ai-log       { font-size: 11px; font-family: var(--mono); color: var(--accent3); line-height: 1.8; }
+    .ai-log .ts   { color: #4a6f8f; margin-right: 6px; }
+    .ai-log .cmd  { color: var(--accent2); }
+    .ai-log .safe { color: var(--accent3); }
+    .ai-log .warn { color: var(--warn); }
+    .ai-log .err  { color: var(--danger); }
+
+    /* ==============================================================
+       SECTION 11 — ACTION BUTTONS (right column)
+       .active = system performing this action  (orange highlight)
+       .fired  = emergency deployed              (red flash)
+    ============================================================== */
+    .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .action-btn  { background: var(--panel2); border: 1px solid var(--border); border-radius: 6px; padding: 12px 10px; text-align: center; cursor: pointer; transition: all 0.2s; }
+    .action-btn:hover  { border-color: var(--accent); transform: translateY(-1px); }
+    .action-btn.active { border-color: var(--accent2); background: rgba(255,107,53,0.1); }
+    .action-btn.fired  { border-color: var(--danger);  background: rgba(255,23,68,0.15); animation: warn-flash 0.4s 3; }
+    .action-icon  { font-size: 20px; margin-bottom: 4px; }
+    .action-name  { font-size: 9px; letter-spacing: 2px; font-family: var(--mono); color: var(--text); text-transform: uppercase; }
+    .action-state { font-size: 10px; font-family: var(--mono); color: #6a8faf; margin-top: 3px; }
+
+    /* ==============================================================
+       SECTION 12 — WORKFLOW STEPS (right column)
+       Steps 3-5 turn red when risk > 70.  Steps 2-5 turn yellow when risk > 40.
+    ============================================================== */
+    .wf-step { padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--panel2); font-size: 10px; font-family: var(--mono); transition: all 0.3s; }
+    .wf-num  { color: var(--accent); }
+    .wf-lbl  { color: #6a8faf; }
+
+    /* ==============================================================
+       SECTION 13 — SCENARIO BUTTONS
+    ============================================================== */
+    .scenario-bar { display: flex; gap: 8px; margin-top: 10px; }
+    .scen-btn { flex: 1; padding: 7px 6px; background: var(--panel2); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-family: var(--mono); font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; cursor: pointer; transition: all 0.2s; text-align: center; }
+    .scen-btn:hover  { border-color: var(--accent);  color: var(--accent); }
+    .scen-btn.active { border-color: var(--accent2); color: var(--accent2); background: rgba(255,107,53,0.1); }
+
+    /* ==============================================================
+       SECTION 14 — SAFETY BALLOON VISUAL
+       Hidden by default. .show class makes it visible when deployed.
+    ============================================================== */
+    .balloon-deployed { position: absolute; bottom: -10px; left: 50%; transform: translateX(-50%); width: 60px; height: 60px; border-radius: 50%; background: radial-gradient(circle, rgba(255,107,53,0.6), rgba(255,107,53,0.1)); border: 2px solid var(--accent2); display: none; align-items: center; justify-content: center; font-size: 9px; font-family: var(--mono); color: var(--accent2); letter-spacing: 1px; animation: float 1s ease-in-out infinite; }
+    .balloon-deployed.show { display: flex; }
+
+    /* ==============================================================
+       SECTION 15 — BOTTOM STAT CARDS
+    ============================================================== */
+    .bottom-bar { display: grid; grid-template-columns: repeat(5,1fr); gap: 8px; }
+    .stat-card  { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; text-align: center; }
+    .stat-label { font-size: 9px; letter-spacing: 2px; color: #6a8faf; font-family: var(--mono); text-transform: uppercase; }
+    .stat-val   { font-size: 20px; font-weight: 700; font-family: var(--mono); color: var(--accent); margin: 2px 0; }
+    .stat-unit  { font-size: 10px; color: #6a8faf; font-family: var(--mono); }
+  </style>
+</head>
+<body>
+<div class="hud">
+
+  <!-- ============================================================
+       HTML SECTION 1 — HEADER
+       Contains: system name / status badge / live clock
+  ============================================================ -->
+  <div class="header">
+    <div>
+      <div class="header-title">Intelligent Vehicle Safety &amp; Control System</div>
+      <div class="header-main">IVSCS <span style="font-size:13px;color:#6a8faf;font-weight:300">v4.2.1</span></div>
+    </div>
+    <div style="text-align:center">
+      <!-- id="status-badge" class is changed by updateStatusBadge() in JS -->
+      <div id="status-badge" class="status-badge active">
+        <div class="dot pulse"></div>
+        <span id="status-text">ALL SYSTEMS NOMINAL</span>
+      </div>
+    </div>
+    <!-- Updated every second by updateClock() -->
+    <div class="time-display">
+      <div id="clock">00:00:00</div>
+      <div style="font-size:9px;color:#6a8faf;margin-top:2px">SYSTEM TIME</div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       HTML SECTION 2 — MAIN GRID (3 columns)
+  ============================================================ -->
+  <div class="main-grid">
+
+    <!-- LEFT COLUMN: SENSING LAYER -->
+    <div class="left-col">
+      <div class="panel">
+        <div class="panel-title">Layer 01 — Sensing</div>
+        <div class="sensor-grid">
+
+          <!-- Grip sensor: μ = friction coefficient. Low = ice/wet. High = dry grip -->
+          <div class="sensor-item" id="s-grip">
+            <div class="sensor-label">Wheel Grip Level</div>
+            <div class="sensor-value" id="v-grip">0.87 <span>&#956;</span></div>
+            <div class="sensor-bar"><div class="sensor-bar-fill" id="b-grip" style="width:87%;background:#39ff14"></div></div>
+          </div>
+
+          <!-- Vibration sensor: high Hz = rough/slippery surface -->
+          <div class="sensor-item" id="s-vib">
+            <div class="sensor-label">Road Vibration</div>
+            <div class="sensor-value" id="v-vib">12 <span>Hz</span></div>
+            <div class="sensor-bar"><div class="sensor-bar-fill" id="b-vib" style="width:20%;background:#39ff14"></div></div>
+          </div>
+
+          <!-- Ultrasonic sensor: distance to nearest front obstacle -->
+          <div class="sensor-item" id="s-front">
+            <div class="sensor-label">Front Distance</div>
+            <div class="sensor-value" id="v-front">48 <span>m</span></div>
+            <div class="sensor-bar"><div class="sensor-bar-fill" id="b-front" style="width:80%;background:#39ff14"></div></div>
+          </div>
+
+          <!-- Rear camera: approach speed of vehicle behind -->
+          <div class="sensor-item" id="s-rear">
+            <div class="sensor-label">Rear Approach Speed</div>
+            <div class="sensor-value" id="v-rear">0 <span>km/h</span></div>
+            <div class="sensor-bar"><div class="sensor-bar-fill" id="b-rear" style="width:0%;background:#39ff14"></div></div>
+          </div>
+
+          <!-- Front camera AI: pedestrian or vehicle detected ahead? -->
+          <div class="sensor-item" id="s-obj">
+            <div class="sensor-label">Object Detected</div>
+            <div class="sensor-value" id="v-obj" style="font-size:14px;padding-top:4px">CLEAR</div>
+            <div class="sensor-bar"><div class="sensor-bar-fill" id="b-obj" style="width:0%;background:#39ff14"></div></div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Each button calls setScenario() with the scenario name -->
+      <div class="panel">
+        <div class="panel-title">Simulate Scenario</div>
+        <div class="scenario-bar">
+          <button class="scen-btn active" id="scen-normal" onclick="setScenario('normal')">Normal</button>
+          <button class="scen-btn"        id="scen-slip"   onclick="setScenario('slip')">Slippery</button>
+          <button class="scen-btn"        id="scen-obj"    onclick="setScenario('object')">Object</button>
+          <button class="scen-btn"        id="scen-rear"   onclick="setScenario('rear')">Rear Hit</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- CENTRE COLUMN: AI PROCESSING / RADAR -->
+    <div class="center-col">
+      <div class="panel" style="flex-shrink:0">
+        <div class="panel-title">Layer 02 — AI Processing &middot; Radar View</div>
+        <div style="display:flex;gap:16px;align-items:center;justify-content:center">
+
+          <!-- Canvas drawn by drawRadar(). scan-line spins via CSS animation. -->
+          <div class="radar-wrap">
+            <canvas id="radar-canvas" width="260" height="260"></canvas>
+            <div class="scan-line"></div>
+            <!-- Balloon visual: hidden until balloonDeployed = true -->
+            <div class="balloon-deployed" id="balloon">AIRBAG</div>
+          </div>
+
+          <!-- Risk ring + speed readout -->
+          <div style="display:flex;flex-direction:column;gap:10px;align-items:center">
+            <div class="risk-ring">
+              <!-- #risk-arc stroke-dashoffset is set by JS to fill the ring 0–100% -->
+              <svg width="100" height="100" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="8"/>
+                <circle cx="50" cy="50" r="42" fill="none" id="risk-arc"
+                  stroke="#39ff14" stroke-width="8"
+                  stroke-dasharray="264" stroke-dashoffset="264"
+                  stroke-linecap="round" transform="rotate(-90 50 50)"
+                  style="transition:stroke-dashoffset 0.5s,stroke 0.5s"/>
+              </svg>
+              <div><div class="risk-val" id="risk-val">0%</div></div>
+            </div>
+            <div class="risk-label">COLLISION<br>RISK</div>
+            <div style="width:80px;height:1px;background:rgba(0,229,255,0.15);margin:4px 0"></div>
+            <div style="font-size:9px;font-family:'Share Tech Mono',monospace;color:#6a8faf;letter-spacing:1px;text-align:center">SPEED</div>
+            <div style="font-size:28px;font-weight:700;font-family:'Share Tech Mono',monospace;color:#00e5ff" id="speed-val">72</div>
+            <div style="font-size:9px;font-family:'Share Tech Mono',monospace;color:#6a8faf">km/h</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Messages added by log() in JS. Max 20 entries kept. -->
+      <div class="panel" style="flex:1">
+        <div class="panel-title">AI Decision Log</div>
+        <div id="ai-log" class="ai-log" style="height:130px;overflow-y:auto;scrollbar-width:thin">
+          <div><span class="ts">[00000s]</span><span class="safe">SYSTEM BOOT COMPLETE</span></div>
+          <div><span class="ts">[00000s]</span>Sensors initialized &mdash; 5/5 online</div>
+          <div><span class="ts">[00000s]</span>Road state: DRY &middot; Grip: 0.87&mu;</div>
+          <div><span class="ts">[00000s]</span><span class="safe">Risk assessment: LOW &middot; No action required</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT COLUMN: ACTION LAYER -->
+    <div class="right-col">
+      <div class="panel">
+        <div class="panel-title">Layer 03 — Action</div>
+        <div class="action-grid">
+          <!-- JS adds .active class when each system is running -->
+          <div class="action-btn" id="act-ecu">
+            <div class="action-icon">&#9881;&#65039;</div>
+            <div class="action-name">Engine<br>Control</div>
+            <div class="action-state" id="act-ecu-s">NOMINAL</div>
+          </div>
+          <div class="action-btn" id="act-brake">
+            <div class="action-icon">&#128721;</div>
+            <div class="action-name">Smart<br>Braking</div>
+            <div class="action-state" id="act-brake-s">STANDBY</div>
+          </div>
+          <div class="action-btn" id="act-antiskid">
+            <div class="action-icon">&#128260;</div>
+            <div class="action-name">Anti-Skid<br>Control</div>
+            <div class="action-state" id="act-antiskid-s">IDLE</div>
+          </div>
+          <!-- .fired class when balloon is deployed -->
+          <div class="action-btn" id="act-balloon">
+            <div class="action-icon">&#127880;</div>
+            <div class="action-name">Safety<br>Balloon</div>
+            <div class="action-state" id="act-balloon-s">ARMED</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Steps highlight as risk increases: yellow > 40%, red > 70% -->
+      <div class="panel" style="flex:1">
+        <div class="panel-title">Layer 04 — Workflow</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div class="wf-step" id="wf1"><span class="wf-num">01</span>&nbsp;<span class="wf-lbl">MONITOR</span>&nbsp;Continuous sensor polling</div>
+          <div class="wf-step" id="wf2"><span class="wf-num">02</span>&nbsp;<span class="wf-lbl">CHECK</span>&nbsp;&nbsp;&nbsp;Slippery? Object?</div>
+          <div class="wf-step" id="wf3"><span class="wf-num">03</span>&nbsp;<span class="wf-lbl">REACT</span>&nbsp;&nbsp;&nbsp;Reduce engine torque</div>
+          <div class="wf-step" id="wf4"><span class="wf-num">04</span>&nbsp;<span class="wf-lbl">ACTION</span>&nbsp;Pre-charge brakes</div>
+          <div class="wf-step" id="wf5"><span class="wf-num">05</span>&nbsp;<span class="wf-lbl">STOP</span>&nbsp;&nbsp;&nbsp;Controlled safe halt</div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /main-grid -->
+
+  <!-- ============================================================
+       HTML SECTION 3 — BOTTOM STAT BAR
+       5 summary values updated by updateBottomBar() in JS
+  ============================================================ -->
+  <div class="bottom-bar">
+    <div class="stat-card"><div class="stat-label">Reaction Time</div><div class="stat-val" id="s-react">18</div><div class="stat-unit">ms</div></div>
+    <div class="stat-card"><div class="stat-label">Road State</div><div class="stat-val" id="s-road" style="font-size:14px;padding-top:4px">DRY</div><div class="stat-unit">&nbsp;</div></div>
+    <div class="stat-card"><div class="stat-label">Engine Torque</div><div class="stat-val" id="s-torque">100</div><div class="stat-unit">%</div></div>
+    <div class="stat-card"><div class="stat-label">Brake Pressure</div><div class="stat-val" id="s-bpress">0</div><div class="stat-unit">bar</div></div>
+    <div class="stat-card"><div class="stat-label">Events Today</div><div class="stat-val" id="s-events">0</div><div class="stat-unit">interventions</div></div>
+  </div>
+
+</div><!-- /hud -->
+
+<script>
+/* ================================================================
+   JS SECTION 1 — STATE OBJECT
+   Single source of truth. Every sensor value lives here.
+   JS writes to this object. updateUI() reads it to update the HTML.
+================================================================ */
+const state = {
+  grip:            0.87,   // wheel friction (0 = no grip, 1 = full grip)
+  vib:             12,     // road vibration in Hz
+  frontDist:       48,     // metres to front obstacle
+  rearSpeed:       0,      // approach speed of vehicle behind (km/h)
+  objDetected:     false,  // camera has detected a pedestrian/vehicle
+  risk:            2,      // collision risk score 0–100
+  speed:           72,     // vehicle speed (km/h)
+  torque:          100,    // engine torque as percentage
+  brakePressure:   0,      // hydraulic brake pressure (bar)
+  brakeActive:     false,  // smart braking is engaged
+  antiskidActive:  false,  // anti-skid is running
+  ecuActive:       false,  // ECU is reducing torque
+  balloonArmed:    true,   // safety balloon is armed and ready
+  balloonDeployed: false,  // safety balloon has been deployed
+  roadState:       'DRY',  // 'DRY' | 'WET' | 'ICY'
+};
+
+/* ================================================================
+   JS SECTION 2 — GLOBAL COUNTERS
+================================================================ */
+let events     = 0;          // number of safety interventions logged
+let startTime  = Date.now(); // boot time (used for log timestamps)
+let frameCount = 0;          // counts animation frames
+
+/* ================================================================
+   JS SECTION 3 — RADAR CANVAS
+   Draws grid rings, sweep fan, vehicle marker, and threat blips.
+   Called every animation frame for smooth rotation.
+================================================================ */
+const canvas = document.getElementById('radar-canvas');
+const ctx    = canvas.getContext('2d');
+const CX = 130, CY = 130;  // canvas centre coordinates
+let radarAngle = 0;         // current sweep angle (radians)
+
+function drawRadar() {
+  ctx.clearRect(0, 0, 260, 260);
+  ctx.fillStyle = '#040d1a';
+  ctx.fillRect(0, 0, 260, 260);
+
+  // Concentric range rings (every 30px)
+  for (let r = 30; r <= 120; r += 30) {
+    ctx.beginPath();
+    ctx.arc(CX, CY, r, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(0,229,255,0.08)';
+    ctx.lineWidth = 0.5;
+    ctx.stroke();
+  }
+
+  // Cross-hair lines through centre
+  ctx.strokeStyle = 'rgba(0,229,255,0.08)'; ctx.lineWidth = 0.5;
+  ctx.beginPath(); ctx.moveTo(CX-120, CY); ctx.lineTo(CX+120, CY); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(CX, CY-120); ctx.lineTo(CX, CY+120); ctx.stroke();
+
+  // Rotating sweep fan (gradient from cyan to transparent)
+  ctx.save();
+  ctx.translate(CX, CY);
+  ctx.rotate(radarAngle);
+  const g = ctx.createLinearGradient(0, 0, 120, 0);
+  g.addColorStop(0, 'rgba(0,229,255,0.35)');
+  g.addColorStop(1, 'rgba(0,229,255,0)');
+  ctx.beginPath(); ctx.moveTo(0,0); ctx.arc(0, 0, 120, -0.3, 0); ctx.closePath();
+  ctx.fillStyle = g; ctx.fill();
+  ctx.restore();
+
+  // Ego vehicle marker (small rounded rectangle at centre)
+  ctx.save();
+  ctx.translate(CX, CY);
+  ctx.fillStyle = 'rgba(0,229,255,0.9)';
+  ctx.beginPath(); ctx.roundRect(-8, -14, 16, 28, 3); ctx.fill();
+  ctx.restore();
+
+  // Scenario overlays: show threat blips when active
+  if (scenario === 'object') {
+    // Yellow blip ahead = pedestrian detected by camera
+    ctx.beginPath(); ctx.arc(CX, CY-65, 8, 0, Math.PI*2); ctx.fillStyle = 'rgba(255,214,0,0.9)'; ctx.fill();
+    ctx.beginPath(); ctx.arc(CX, CY-65, 14, 0, Math.PI*2); ctx.fillStyle = 'rgba(255,214,0,0.2)'; ctx.fill();
+    ctx.fillStyle = 'rgba(0,229,255,0.7)'; ctx.font = '9px Share Tech Mono'; ctx.textAlign = 'center';
+    ctx.fillText('PEDESTRIAN', CX, CY-80);
+  }
+  if (scenario === 'rear') {
+    // Red blip behind = fast-approaching vehicle
+    ctx.beginPath(); ctx.arc(CX, CY+80, 10, 0, Math.PI*2); ctx.fillStyle = 'rgba(255,23,68,0.9)'; ctx.fill();
+    ctx.beginPath(); ctx.arc(CX, CY+80, 18, 0, Math.PI*2); ctx.fillStyle = 'rgba(255,23,68,0.2)'; ctx.fill();
+    ctx.fillStyle = 'rgba(255,23,68,0.7)'; ctx.font = '9px Share Tech Mono'; ctx.textAlign = 'center';
+    ctx.fillText('INCOMING', CX, CY+100);
+  }
+
+  radarAngle += 0.04; // advance sweep angle each frame
+}
+
+/* ================================================================
+   JS SECTION 4 — UI UPDATE FUNCTIONS
+   Read from state object and update the HTML elements.
+   Called every ~4 frames (~15 fps) from the main loop.
+================================================================ */
+
+// Master update — calls all sub-updates in order
+function updateUI() {
+  updateSensors();
+  updateRisk();
+  updateActions();
+  updateWorkflow();
+  updateBottomBar();
+  updateStatusBadge();
+}
+
+// Update all 5 sensor cards
+function updateSensors() {
+  // Grip: lower % = worse (danger < 30%, warning < 60%)
+  const gPct = Math.round(state.grip * 100);
+  document.getElementById('v-grip').innerHTML = state.grip.toFixed(2) + ' <span>&#956;</span>';
+  setBar('b-grip', gPct, gPct < 30, gPct < 60);
+  document.getElementById('s-grip').className = 'sensor-item' + (gPct < 30 ? ' danger' : gPct < 60 ? ' warning' : '');
+
+  // Vibration: higher % = worse (danger > 60%, warning > 30%)
+  const vPct = Math.min(100, Math.round(state.vib * 2));
+  document.getElementById('v-vib').innerHTML = Math.round(state.vib) + ' <span>Hz</span>';
+  setBar('b-vib', vPct, vPct > 60, vPct > 30);
+  document.getElementById('s-vib').className = 'sensor-item' + (vPct > 60 ? ' danger' : vPct > 30 ? ' warning' : '');
+
+  // Front distance: lower % = worse (danger < 20%, warning < 40%)
+  const fPct = Math.min(100, Math.round((state.frontDist / 60) * 100));
+  document.getElementById('v-front').innerHTML = Math.round(state.frontDist) + ' <span>m</span>';
+  setBar('b-front', fPct, fPct < 20, fPct < 40);
+  document.getElementById('s-front').className = 'sensor-item' + (fPct < 20 ? ' danger' : fPct < 40 ? ' warning' : '');
+
+  // Rear speed: higher % = worse (danger > 60%, warning > 30%)
+  const rPct = Math.min(100, Math.round((state.rearSpeed / 150) * 100));
+  document.getElementById('v-rear').innerHTML = Math.round(state.rearSpeed) + ' <span>km/h</span>';
+  setBar('b-rear', rPct, rPct > 60, rPct > 30);
+  document.getElementById('s-rear').className = 'sensor-item' + (rPct > 60 ? ' danger' : rPct > 30 ? ' warning' : '');
+
+  // Object detection: simple text + colour change
+  const o = document.getElementById('v-obj');
+  o.textContent = state.objDetected ? '! DETECTED' : 'CLEAR';
+  o.style.color = state.objDetected ? '#ffd600' : '#39ff14';
+  document.getElementById('s-obj').className = 'sensor-item' + (state.objDetected ? ' warning' : '');
+}
+
+// Helper: set a sensor bar's width and colour (green / yellow / red)
+function setBar(id, pct, isDanger, isWarn) {
+  const el = document.getElementById(id);
+  el.style.width      = pct + '%';
+  el.style.background = isDanger ? '#ff1744' : isWarn ? '#ffd600' : '#39ff14';
+}
+
+// Update the SVG risk ring (stroke-dashoffset fills the circle arc)
+function updateRisk() {
+  const arc = document.getElementById('risk-arc');
+  const val = document.getElementById('risk-val');
+  const col = state.risk > 70 ? '#ff1744' : state.risk > 40 ? '#ffd600' : '#39ff14';
+  arc.setAttribute('stroke-dashoffset', 264 - (state.risk / 100) * 264);
+  arc.setAttribute('stroke', col);
+  val.textContent = Math.round(state.risk) + '%';
+  val.style.color = col;
+  document.getElementById('speed-val').textContent = Math.round(state.speed);
+}
+
+// Update the top status badge
+function updateStatusBadge() {
+  const b = document.getElementById('status-badge');
+  const t = document.getElementById('status-text');
+  if      (state.risk > 70) { b.className = 'status-badge danger';  t.textContent = 'CRITICAL — INTERVENTION ACTIVE'; }
+  else if (state.risk > 40) { b.className = 'status-badge warning'; t.textContent = 'WARNING — MONITORING ELEVATED'; }
+  else                      { b.className = 'status-badge active';  t.textContent = 'ALL SYSTEMS NOMINAL'; }
+}
+
+// Update action buttons (.active when system is running)
+function updateActions() {
+  setBtn('act-ecu',      state.ecuActive,      'REDUCING',  'NOMINAL',  '#ff6b35');
+  setBtn('act-brake',    state.brakeActive,     'ENGAGED',   'STANDBY',  '#ff6b35');
+  setBtn('act-antiskid', state.antiskidActive,  'ACTIVE',    'IDLE',     '#ffd600');
+  document.getElementById('act-balloon').className     = 'action-btn' + (state.balloonDeployed ? ' fired' : '');
+  document.getElementById('act-balloon-s').textContent = state.balloonDeployed ? 'DEPLOYED!' : 'ARMED';
+  document.getElementById('act-balloon-s').style.color = state.balloonDeployed ? '#ff1744' : '#6a8faf';
+  document.getElementById('balloon').classList.toggle('show', state.balloonDeployed);
+}
+
+// Helper: update one action button
+function setBtn(id, active, onLabel, offLabel, onColour) {
+  document.getElementById(id).className          = 'action-btn' + (active ? ' active' : '');
+  document.getElementById(id+'-s').textContent   = active ? onLabel : offLabel;
+  document.getElementById(id+'-s').style.color   = active ? onColour : '#6a8faf';
+}
+
+// Highlight workflow steps based on risk level
+function updateWorkflow() {
+  ['wf1','wf2','wf3','wf4','wf5'].forEach((id, i) => {
+    const el = document.getElementById(id);
+    if      (state.risk > 70 && i >= 2) { el.style.cssText = 'border-color:#ff1744;background:rgba(255,23,68,0.12);color:#ff6b6b'; }
+    else if (state.risk > 40 && i >= 1) { el.style.cssText = 'border-color:#ffd600;background:rgba(255,214,0,0.08);color:#ffd600'; }
+    else                                { el.style.cssText = 'border-color:rgba(0,229,255,0.15);background:#0a1f3d;color:#c8e6f7'; }
+  });
+}
+
+// Update the 5 bottom stat cards
+function updateBottomBar() {
+  document.getElementById('s-react').textContent  = state.brakeActive ? '8' : '18';
+  document.getElementById('s-torque').textContent = Math.round(state.torque);
+  document.getElementById('s-bpress').textContent = state.brakePressure.toFixed(1);
+  document.getElementById('s-events').textContent = events;
+  const r = document.getElementById('s-road');
+  r.textContent = state.roadState;
+  r.style.color = state.roadState === 'ICY' ? '#00e5ff' : state.roadState === 'WET' ? '#64b5f6' : '#39ff14';
+}
+
+/* ================================================================
+   JS SECTION 5 — AI LOG
+   Adds a timestamped message to the scrolling log.
+   type = 'safe' | 'warn' | 'err' | 'cmd' | '' (plain white)
+================================================================ */
+function log(msg, type = '') {
+  const el      = document.getElementById('ai-log');
+  const elapsed = String(Math.floor((Date.now() - startTime) / 1000)).padStart(5, '0');
+  const div     = document.createElement('div');
+  div.innerHTML = `<span class="ts">[${elapsed}s]</span><span class="${type}">${msg}</span>`;
+  div.style.animation = 'slide-in 0.3s ease';
+  el.appendChild(div);
+  el.scrollTop = el.scrollHeight;
+  while (el.children.length > 20) el.removeChild(el.firstChild); // keep max 20 entries
+}
+
+/* ================================================================
+   JS SECTION 6 — SCENARIO CONTROLLER
+   4 scenarios demonstrate different danger situations.
+   Each sets state values and logs messages to the AI log.
+================================================================ */
+let scenario      = 'normal';
+let scenarioTimer = null;
+
+function setScenario(s) {
+  document.querySelectorAll('.scen-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('scen-' + s).classList.add('active');
+  if (scenarioTimer) { clearTimeout(scenarioTimer); scenarioTimer = null; }
+  scenario = s;
+
+  if (s === 'normal') {
+    // Reset everything to safe baseline values
+    Object.assign(state, {
+      grip:0.87, vib:12, frontDist:48, rearSpeed:0, objDetected:false,
+      risk:2, speed:72, torque:100, brakePressure:0,
+      brakeActive:false, antiskidActive:false, ecuActive:false,
+      balloonDeployed:false, roadState:'DRY'
+    });
+    log('Scenario NORMAL — all clear', 'safe');
+  }
+
+  else if (s === 'slip') {
+    // Icy road: low grip triggers anti-skid and torque reduction
+    Object.assign(state, { grip:0.18, vib:38, roadState:'ICY', risk:55, antiskidActive:true, ecuActive:true, torque:55, brakePressure:2.4 });
+    log('WARNING: Slippery road — grip 0.18μ', 'warn');
+    log('AI: Anti-skid control activated', 'cmd');
+    log('AI: Engine torque reduced to 55%', 'cmd');
+    events++;
+    // After 3s: grip stabilises, risk reduces
+    scenarioTimer = setTimeout(() => { log('Grip stabilizing — recovery in progress', 'safe'); state.risk = 35; }, 3000);
+  }
+
+  else if (s === 'object') {
+    // Pedestrian detected: emergency braking sequence in 3 phases
+    Object.assign(state, { frontDist:12, objDetected:true, risk:75, speed:42, brakeActive:true, ecuActive:true, torque:30, brakePressure:7.8 });
+    log('CRITICAL: Object detected — 12m ahead', 'err');
+    log('AI: Emergency brake pre-charge initiated', 'cmd');
+    log('AI: Smart braking ENGAGED', 'cmd');
+    events++;
+    // Phase 2 (2s later): vehicle decelerating
+    scenarioTimer = setTimeout(() => {
+      state.frontDist = 28; state.speed = 18;
+      log('Vehicle decelerating — 18 km/h', 'warn');
+      // Phase 3 (3s later): safe stop achieved
+      scenarioTimer = setTimeout(() => {
+        Object.assign(state, { speed:0, frontDist:3.5, risk:8, brakeActive:false, objDetected:false });
+        log('SAFE STOP achieved — 3.5m clearance', 'safe');
+        events++;
+      }, 3000);
+    }, 2000);
+  }
+
+  else if (s === 'rear') {
+    // Vehicle approaching fast from behind: deploy safety balloon
+    Object.assign(state, { rearSpeed:118, risk:95, balloonDeployed:true });
+    log('CRITICAL: Rear collision imminent!', 'err');
+    log('AI: Rear approach speed 118 km/h', 'err');
+    log('AI: DEPLOYING exterior safety balloon', 'cmd');
+    events++;
+    // Phase 2 (1.5s later): balloon deployed
+    scenarioTimer = setTimeout(() => {
+      log('Balloon DEPLOYED — impact cushioned', 'warn');
+      // Phase 3 (2.5s later): threat neutralised
+      scenarioTimer = setTimeout(() => {
+        state.rearSpeed = 0; state.risk = 30;
+        log('Rear threat neutralized — monitoring', 'safe');
+      }, 2500);
+    }, 1500);
+  }
+}
+
+/* ================================================================
+   JS SECTION 7 — SENSOR NOISE
+   Adds tiny random variations during normal mode so the dashboard
+   looks like a live system (not frozen).
+================================================================ */
+function addNoise() {
+  if (scenario !== 'normal') return;
+  state.grip      = Math.min(0.99, Math.max(0.75, state.grip      + (Math.random()-0.5)*0.03));
+  state.vib       = Math.max(8,    Math.min(20,   state.vib       + (Math.random()-0.5)*4));
+  state.frontDist = Math.max(30,   Math.min(60,   state.frontDist + (Math.random()-0.5)*3));
+  state.risk      = Math.max(1,    Math.min(8,    state.risk      + (Math.random()-0.5)*2));
+  state.speed     = Math.max(68,   Math.min(76,   state.speed     + (Math.random()-0.5)*1));
+}
+
+/* ================================================================
+   JS SECTION 8 — CLOCK
+================================================================ */
+function updateClock() {
+  const n = new Date();
+  document.getElementById('clock').textContent =
+    String(n.getHours()).padStart(2,'0') + ':' +
+    String(n.getMinutes()).padStart(2,'0') + ':' +
+    String(n.getSeconds()).padStart(2,'0');
+}
+
+/* ================================================================
+   JS SECTION 9 — MAIN ANIMATION LOOP
+   requestAnimationFrame fires at ~60fps.
+   Radar drawn every frame (smooth).
+   Everything else updated every 4 frames (~15fps).
+================================================================ */
+function loop() {
+  drawRadar();
+  frameCount++;
+  if (frameCount % 4 === 0) {
+    addNoise();
+    updateUI();
+    updateClock();
+  }
+  requestAnimationFrame(loop);
+}
+
+/* ================================================================
+   JS SECTION 10 — BOOT
+   Called once when the page loads.
+================================================================ */
+setScenario('normal'); // set initial state + write boot messages to log
+loop();                // start the animation loop
+</script>
+</body>
+</html>
 
