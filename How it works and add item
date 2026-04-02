@@ -1,0 +1,50 @@
+// --- IVSCS Phase X: Futuristic Systems Logic ---
+
+let harvestedEnergy = 0;
+let localGravity = 1.0;
+
+/**
+ * Updates the futuristic dashboard metrics including 
+ * Energy Harvesting and Antigravity Status.
+ * @param {boolean} isEmergency - Triggers the Hover/Antigravity sequence
+ */
+function updateFuturisticStats(isEmergency) {
+    const gravityElement = document.getElementById('s-gravity');
+    const energyElement = document.getElementById('s-energy');
+    const statusLabel = document.getElementById('status-text');
+
+    // 1. Energy Harvesting Logic: Simulated micro-generation from tire vibration
+    // Generates a random value between 0.1 and 0.6 mW per second
+    harvestedEnergy += (Math.random() * 0.5) + 0.1;
+    if (energyElement) {
+        energyElement.innerText = harvestedEnergy.toFixed(2);
+    }
+
+    // 2. Antigravity & Hover Logic
+    if (isEmergency) {
+        // Emergency Lift: Reducing local G-force to 0.4 for collision avoidance
+        localGravity = 0.4;
+        if (gravityElement) {
+            gravityElement.innerText = localGravity;
+            gravityElement.style.color = "#ff0055"; // Danger/Active Red
+            gravityElement.classList.add("pulse-animation");
+        }
+        if (statusLabel) {
+            statusLabel.innerText = "HOVER MODE: ACTIVE (EMERGENCY LIFT)";
+        }
+    } else {
+        // Normal Operations: Standard Earth gravity
+        localGravity = 1.0;
+        if (gravityElement) {
+            gravityElement.innerText = localGravity;
+            gravityElement.style.color = "#00f2ff"; // Tech Cyan
+            gravityElement.classList.remove("pulse-animation");
+        }
+    }
+}
+
+// Global loop to simulate continuous energy harvesting during drive
+setInterval(() => {
+    // In a real scenario, this would check if the vehicle is moving
+    updateFuturisticStats(false); 
+}, 1000);
