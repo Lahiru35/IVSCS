@@ -158,6 +158,7 @@ Battery inside a rotating tyre is impractical — replacement requires tyre remo
 
 ### Circuit Design (Passive RFID Option)
 
+
 Stationary Side: Rotating Side (Tyre):
 ┌─────────────┐ ┌─────────────────────┐
 │ LF Reader │────Inductive──────→│ LF Coil (antenna) │
@@ -167,7 +168,6 @@ Stationary Side: Rotating Side (Tyre):
 │ ↓ │
 │ PVDF Sensor Input │
 └─────────────────────┘
-
 
 ### Circuit Design (Energy Harvesting Backup — Research)
 1. PVDF output → full-wave rectifier (Schottky diodes, low forward voltage)
@@ -276,4 +276,3 @@ RFID chip embedding is already standard in tyre manufacturing (TPMS, tyre ID). T
 - [`index.html`](index.html) — Live dashboard (open in browser)
 - [`js/state.js`](js/state.js) — Vehicle state object
 - [`js/scenarios.js`](js/scenarios.js) — Simulation scenarios
-
