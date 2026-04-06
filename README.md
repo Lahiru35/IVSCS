@@ -1,3 +1,37 @@
+![Project Status](https://img.shields.io/badge/status-active-brightgreen)
+![License](https://img.shields.io/badge/license-MIT-blue)
+![Python](https://img.shields.io/badge/python-3.9+-blue)
+![OpenCV](https://img.shields.io/badge/OpenCV-AI-red)
+![Simulation](https://img.shields.io/badge/simulation-ready-yellow)
+![Hardware](https://img.shields.io/badge/hardware-prototype%20stage-orange)
+
+## 📖 Table of Contents
+- [Overview](#-overview)
+- [How It Works](#-how-it-works)
+- [Key Innovation](#-key-innovation--embedded-piezoelectric-smart-tyre)
+- [Dashboard](#-dashboard)
+- [Tech Stack](#-tech-stack)
+- [Getting Started](#-getting-started)
+- [Future Work](#-future-work--roadmap)
+- [Author](#-author)
+- [License](#-license)
+
+## 🔧 Hardware Requirements (for Physical Prototype)
+
+| Component | Specification | Estimated Cost (Sri Lanka) |
+|-----------|---------------|---------------------------|
+| Raspberry Pi 4 | 4GB RAM | Rs. 25,000 – 30,000 |
+| Arduino Nano | For sensor interface | Rs. 3,000 – 4,000 |
+| Pi Camera Module v3 | 12MP, for object detection | Rs. 8,000 – 10,000 |
+| Ultrasonic Sensor (HC-SR04) | Front distance measurement | Rs. 500 – 800 |
+| PVDF Film (LDT0-028K) | Piezoelectric sensor | Rs. 1,800 – 2,500 |
+| LF Antenna Coil | 125 kHz inductive coupling | Rs. 1,000 – 2,000 |
+| Solenoid Valve | For external airbag control | Rs. 2,000 – 3,000 |
+| **Total (approx.)** | | **Rs. 42,000 – 53,000** |
+
+> 💡 *Current status: Software simulation complete. Seeking funding/partnership for hardware prototype.*
+
+
 ![piezo_embedded_tyre_crosssection](https://github.com/user-attachments/assets/c65349b9-ddca-4bd5-b8f8-6dca699295ed)
 
 # IVSCS — Intelligent Vehicle Safety & Control System
@@ -164,5 +198,105 @@ MIT License — free to use, modify, and build upon.
 - [`index.html`](index.html) — Live dashboard (open in browser)
 - [`js/state.js`](js/state.js) — Vehicle state object
 - [`js/scenarios.js`](js/scenarios.js) — Simulation scenarios
+## 🌍 Why This Project Matters
+
+Every year, **1.3 million people die** in road traffic accidents globally. 
+A significant portion of these accidents occur due to:
+- 🧊 **Loss of traction** on wet/icy roads (driver unaware of surface change)
+- 🚶 **Delayed braking** when pedestrians appear suddenly
+- 💥 **Rear-end collisions** at traffic stops
+
+IVSCS addresses these three gaps by:
+1. **Predicting** grip loss before the driver feels it (tyre sensors)
+2. **Automatically reducing torque** on slippery surfaces
+3. **Deploying external airbags** for rear collisions
+
+> This is not just a software project — it's a potential life-saving system.
 
 
+## 🤝 Contributing
+
+This is an open project. You can contribute in these ways:
+
+| Area | What You Can Do |
+|------|----------------|
+| 🧠 AI/ML | Help train the road surface classifier (I have data collection plan) |
+| 🔌 Hardware | PCB design for inductive coupling circuit |
+| 💻 Frontend | Improve dashboard visualizations |
+| 🧪 Testing | Test simulation scenarios and report bugs |
+| 📝 Documentation | Fix typos, translate to other languages |
+
+**How to start:**
+1. Fork the repository
+2. Create a branch (`git checkout -b feature/your-idea`)
+3. Commit your changes
+4. Open a Pull Request
+
+> I'm based in Sri Lanka and have limited hardware access — hardware collaboration is especially welcome.
+## ⚠️ Known Limitations
+
+| Limitation | Impact | Mitigation Plan |
+|------------|--------|----------------|
+| No physical sensor data yet | Dashboard uses simulation | Seeking funding for PVDF film and LF coils |
+| YOLOv8 not yet integrated | Object detection is simulated | Will add when camera hardware available |
+| Energy harvesting insufficient for active TX | Must use passive RFID | Design uses passive RFID (no battery needed) |
+| No real vehicle testing | All results simulated | Digital twin validation only at this stage |
+| Rear airbag = conceptual | Not physically tested | Needs automotive safety certification |
+
+> These limitations are openly acknowledged. The value of this project is in the **system design, innovation, and simulation**, not a production-ready product (yet).
+## 🙏 Acknowledgments
+
+- **Continental AG** — For ContiSense and ContiConnect, which inspired the inductive coupling approach
+- **MIT Media Lab** — PVDF flex cycle research (10M+ cycles)
+- **Pirelli** — Cyber Tyre, LF RFID implementation precedent
+- **OpenCV & YOLO** — Computer vision libraries
+- **Sri Lanka STEM community** — For encouragement and feedback
+
+### Research Papers Referenced
+- "PVDF-TrFE for automotive sensing applications" — Sensors Journal, 2023
+- "Inductive power transfer for rotating systems" — IEEE Transactions, 2022
+- "Tyre tread wear monitoring using piezoelectric signals" — SAE International, 2024
+
+## ❓ FAQ
+
+**Q: Is this a real product?**  
+A: No — it's a research concept + software simulation. But the design is physically feasible.
+
+**Q: Why PVDF instead of PZT?**  
+A: PZT cracks under tyre flex (100,000 cycles). PVDF survives 10M+ cycles and survives vulcanisation heat.
+
+**Q: Do I need a battery in the tyre?**  
+A: No — passive LF RFID powers everything from the stationary reader.
+
+**Q: Can I run this on my laptop?**  
+A: Yes — the dashboard runs in any browser. No installation needed.
+
+**Q: Are you looking for collaborators?**  
+A: Yes! Especially hardware engineers and ML enthusiasts. Open a GitHub issue.
+
+**Q: Will you build a physical prototype?**  
+A: I want to. But I need funding/partnership. If you know someone in automotive industry, introduce me.
+[![Stars](https://img.shields.io/github/stars/yourusername/IVSCS?style=social)](https://github.com/yourusername/IVSCS)
+[![Visitors](https://api.visitorbadge.io/api/visitors?path=yourusername%2FIVSCS&label=Visitors&countColor=%23263759)](https://visitorbadge.io/)
+
+
+README.md
+├── Badges (status, license, etc.)
+├── Title + Tagline
+├── Table of Contents (NEW)
+├── Why This Project Matters (NEW)
+├── Overview
+├── How It Works
+├── Key Innovation
+├── Dashboard
+├── Tech Stack
+├── Hardware Requirements (NEW)
+├── Project Structure
+├── Getting Started
+├── Future Work / Roadmap
+├── Known Limitations (NEW)
+├── FAQ (NEW)
+├── Contributing (NEW)
+├── Acknowledgments (NEW)
+├── Author
+├── License
