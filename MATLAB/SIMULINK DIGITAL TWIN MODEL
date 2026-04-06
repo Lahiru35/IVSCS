@@ -1,0 +1,169 @@
+%% IVSCS - Smart Tyre Digital Twin
+% MATLAB R2023b or later
+% This model simulates PVDF sensor signals for different road surfaces
+% and classifies the surface using a trained classifier.
+
+clear; clc; close all;
+
+%% 1. PARAMETERS
+vehicle_speed_kmh = 60;          % km/h
+tyre_radius_m = 0.3;             % meters
+rotation_rate_hz = (vehicle_speed_kmh * 1000/3600) / (2*pi*tyre_radius_m);
+fprintf('Rotation rate at %d km/h: %.2f Hz\n', vehicle_speed_kmh, rotation_rate_hz);
+
+%% 2. GENERATE PVDF SIGNALS FOR DIFFERENT ROAD SURFACES
+fs = 1000;                       % Sampling frequency (Hz)
+t = 0:1/fs:1;                    % 1 second simulation
+contact_duration = 0.05;         % 50 ms contact patch duration
+
+% Define signal templates (normalized)
+% Dry asphalt: sharp, consistent pulse
+dry_signal = exp(-((t-0.5).^2)/(2*0.01^2)) .* sin(2*pi*200*t);
+dry_signal = dry_signal / max(dry_signal);
+
+% Wet road: dampened, irregular
+wet_signal = exp(-((t-0.5).^2)/(2*0.02^2)) .* (0.6*sin(2*pi*150*t) + 0.3*randn(size(t)));
+wet_signal = wet_signal / max(wet_signal);
+
+% Ice: weak, flat
+ice_signal = 0.15 * exp(-((t-0.5).^2)/(2*0.03^2)) .* (0.3*sin(2*pi*50*t) + 0.2*randn(size(t)));
+ice_signal = ice_signal / max(ice_signal);
+
+% Mud: chaotic, low frequency
+mud_signal = exp(-((t-0.5).^2)/(2*0.04^2)) .* (0.4*sin(2*pi*30*t) + 0.6*randn(size(t)));
+mud_signal = mud_signal / max(mud_signal);
+
+% Sand: high frequency vibration
+sand_signal = exp(-((t-0.5).^2)/(2*0.015^2)) .* (0.5*sin(2*pi*400*t) + 0.3*randn(size(t)));
+sand_signal = sand_signal / max(sand_signal);
+
+%% 3. PLOT SIGNALS
+figure('Position', [100, 100, 1200, 800]);
+
+subplot(3,2,1);
+plot(t, dry_signal, 'g-', 'LineWidth', 1.5);
+title('Dry Asphalt - Sharp, Consistent Pulse');
+xlabel('Time (s)'); ylabel('Normalized Amplitude'); grid on; ylim([-0.2 1.2]);
+
+subplot(3,2,2);
+plot(t, wet_signal, 'b-', 'LineWidth', 1.5);
+title('Wet Road - Dampened, Irregular');
+xlabel('Time (s)'); ylabel('Normalized Amplitude'); grid on; ylim([-0.2 1.2]);
+
+subplot(3,2,3);
+plot(t, ice_signal, 'c-', 'LineWidth', 1.5);
+title('Ice - Weak, Flat Signal');
+xlabel('Time (s)'); ylabel('Normalized Amplitude'); grid on; ylim([-0.2 1.2]);
+
+subplot(3,2,4);
+plot(t, mud_signal, 'r-', 'LineWidth', 1.5);
+title('Mud - Chaotic, Low Frequency');
+xlabel('Time (s)'); ylabel('Normalized Amplitude'); grid on; ylim([-0.2 1.2]);
+
+subplot(3,2,5);
+plot(t, sand_signal, 'm-', 'LineWidth', 1.5);
+title('Sand - High Frequency Vibration');
+xlabel('Time (s)'); ylabel('Normalized Amplitude'); grid on; ylim([-0.2 1.2]);
+
+sgtitle('IVSCS - PVDF Sensor Signals for Different Road Surfaces');
+
+%% 4. FEATURE EXTRACTION
+features = @(signal) [mean(abs(signal)), var(signal), max(signal), ...
+                       meanfreq(signal, fs), pkurtosis(signal)];
+
+dry_features = features(dry_signal);
+wet_features = features(wet_signal);
+ice_features = features(ice_signal);
+mud_features = features(mud_signal);
+sand_features = features(sand_signal);
+
+%% 5. TRAIN SIMPLE CLASSIFIER
+% Create feature matrix
+X = [dry_features; wet_features; ice_features; mud_features; sand_features];
+y = {'Dry'; 'Wet'; 'Ice'; 'Mud'; 'Sand'};
+
+fprintf('\n--- Feature Extraction Results ---\n');
+fprintf('Surface  | MeanAbs | Variance | MaxAmp | MeanFreq(Hz) | Kurtosis\n');
+for i = 1:5
+    fprintf('%-8s | %6.3f  | %7.4f | %6.3f | %8.1f    | %6.2f\n', ...
+        y{i}, X(i,1), X(i,2), X(i,3), X(i,4), X(i,5));
+end
+
+%% 6. CLASSIFICATION FUNCTION (k-NN style)
+classify_surface = @(test_features) knn_classify(test_features, X, y);
+
+% Test with a slightly noisy dry signal
+test_signal = dry_signal + 0.05*randn(size(dry_signal));
+test_features = features(test_signal);
+predicted = classify_surface(test_features);
+fprintf('\nTest classification result: %s (expected: Dry)\n', predicted{1});
+
+%% 7. SIMULINK INTERFACE (optional - requires Simulink)
+% Uncomment to create Simulink model
+% open_system('ivscs_tyre_model');
+% Simulink model would include:
+%   - PVDF sensor block (signal generation based on road type)
+%   - Signal conditioning (filtering, amplification)
+%   - Feature extraction
+%   - Classification block
+%   - CAN bus output
+
+fprintf('\n--- Digital Twin Complete ---\n');
+fprintf('Model ready for integration with Simulink.\n');
+
+%% Helper function
+function [predicted] = knn_classify(test_feat, train_feat, train_labels)
+    k = 1;
+    distances = vecnorm(train_feat - test_feat, 2, 2);
+    [~, idx] = min(distances);
+    predicted = train_labels(idx);
+end
+
+┌─────────────────────────────────────────────────────────────────┐
+│                    IVSCS - SIMULINK DIGITAL TWIN                 │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐       │
+│  │ Road Surface │    │   PVDF       │    │  Signal      │       │
+│  │ Selector     │───▶│ Sensor Model │───▶│ Conditioning │       │
+│  │ (Dry/Wet/    │    │ (Piezoelectric│   │ (Filter/     │       │
+│  │  Ice/Mud/Sand)│    │  Transfer fn)│    │  Amplify)    │       │
+│  └──────────────┘    └──────────────┘    └──────┬───────┘       │
+│                                                  │               │
+│                                                  ▼               │
+│  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐       │
+│  │ CAN Bus      │    │ Classifier   │    │ Feature      │       │
+│  │ Output       │◀───│ (k-NN/Neural │◀───│ Extraction   │       │
+│  │ (to ECU)     │    │  Network)    │    │ (Stats/FFT)  │       │
+│  └──────────────┘    └──────────────┘    └──────────────┘       │
+│                                                                  │
+│  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐       │
+│  │ Vehicle      │    │ Inductive    │    │ Tyre         │       │
+│  │ Dynamics     │    │ Coupling     │    │ Rotation     │       │
+│  │ Model        │    │ (125 kHz)    │    │ Model        │       │
+│  └──────────────┘    └──────────────┘    └──────────────┘       │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+
+%% Create Simulink Model (requires Simulink license)
+% Run this in MATLAB to create the model structure
+
+% Create new model
+new_system('ivscs_digital_twin');
+open_system('ivscs_digital_twin');
+
+% Add blocks (manual or via script)
+% Required blocks from Simulink library:
+%   - Signal Generator (for road surface input)
+%   - Transfer Function (PVDF sensor dynamics)
+%   - Lowpass Filter (signal conditioning)
+%   - Statistics Block (mean, variance, peak)
+%   - MATLAB Function (classifier)
+%   - CAN Pack/CAN Unpack (for vehicle network)
+%   - Scope (visualization)
+%   - To Workspace (data logging)
+
+% Save model
+save_system('ivscs_digital_twin');
+
+fprintf('Simulink model created. Open ivscs_digital_twin.slx to continue.\n');
