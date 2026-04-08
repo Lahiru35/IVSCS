@@ -1,1 +1,238 @@
+# How IVSCS Works
 
+## System Overview
+
+The Intelligent Vehicle Safety & Control System (IVSCS) is a four-layer,
+AI-driven vehicle safety platform that detects road hazards, identifies
+obstacles, calculates collision risk, and triggers protective actions —
+all in real time, controlled by a single AI brain.
+
+---
+
+## Layer 1 — Sensing (Data Acquisition)
+
+The sensing layer acts as the eyes and nervous system of the vehicle.
+All physical world data enters the system through this layer.
+
+### Smart Tyre (Piezoelectric Sensor Network)
+- PVDF-TrFE polymer film sensors embedded in the tyre belt-tread interface
+- Detects road surface type from vibration and pressure patterns
+- Classifies: Dry / Wet / Mud / Sand / Ice
+- Self-powered via piezoelectric energy harvesting from tyre rotation
+- Signal transmitted wirelessly via inductive coupling (NFC 13.56 MHz)
+
+### Front Camera (USB/IP)
+- Runs YOLOv8 object detection model
+- Identifies: pedestrians, vehicles, cyclists, obstacles
+- Estimates distance to detected objects using bounding box geometry
+- Calculates Time To Collision (TTC) from speed and distance
+
+### Rear Camera
+- Monitors approaching vehicles from behind
+- Calculates approach speed of trailing vehicles
+- Triggers rear safety protocol when collision is imminent
+
+### Ultrasonic Sensors
+- Measures precise distance to obstacles (front and sides)
+- Operates independently of lighting conditions
+- Provides redundancy when camera detection is uncertain
+
+---
+
+## Layer 2 — AI Processing (Decision Making)
+
+All sensor data flows into the central AI processing layer every 50
+milliseconds. This layer fuses the data, assesses risk, and issues
+control commands.
+
+### Data Fusion
+Combines inputs from all four sensor sources into a unified road
+environment model. Resolves conflicts between sensors — for example,
+camera sees clear road while tyre sensor detects ice.
+
+### Road Surface Classifier
+- Machine learning model (Random Forest / LSTM)
+- Input: tyre vibration frequency, amplitude, variance pattern
+- Output: road surface classification with confidence score
+- Accuracy target: greater than 90% across five surface types
+
+### Risk Engine
+Calculates a collision probability score from 0 to 100 every 50ms.
+
+
+### Decision Logic
+Issues commands based on risk thresholds:
+
+| Risk Score | System Response |
+|------------|----------------|
+| 0 – 40 | Monitor only — no intervention |
+| 40 – 70 | Warning issued — brakes pre-charged |
+| 70 – 90 | Engine torque reduced — smart braking engaged |
+| 90 – 100 | Full intervention — rear balloon deployed |
+
+---
+
+## Layer 3 — Action (Execution)
+
+The action layer executes commands from the AI processing layer through
+physical hardware actuators.
+
+### Engine Control Unit (ECU)
+- Reduces fuel injection to lower engine torque smoothly
+- Enables engine braking without wheel lock
+- Response time: under 18 milliseconds from command issued
+
+### Smart Braking System
+- Applies brake pressure proportional to current grip level
+- Prevents wheel lock on low-grip surfaces (advanced ABS logic)
+- Adjusts braking force per wheel independently
+
+### Anti-Skid Control
+- Monitors wheel rotation speed differential across all four tyres
+- Detects skid onset and reduces brake pressure instantly
+- Restores steering control during emergency stops
+
+### Rear Safety Balloon
+- Deploys an external cushioning balloon at the rear of the vehicle
+- Activates when rear collision is mathematically unavoidable
+- Pressure-safe inflation: solenoid valve + pressure sensor cutoff
+- Prevents balloon burst — maintains safe inflation pressure
+- Cushions impact force — reduces injury to both vehicles
+
+---
+
+## Layer 4 — Workflow Logic (Decision Flow)
+
+
+START
+│
+▼
+MONITOR — Continuous sensor polling every 50ms
+│
+▼
+CHECK — Is the road slippery?
+├─ YES → Reduce engine torque + activate anti-skid
+│
+CHECK — Is an object detected ahead?
+├─ YES → Pre-charge brakes → calculate stop distance
+│         └─ Can vehicle stop in time?
+│              ├─ YES → Controlled deceleration → safe stop
+│              └─ NO  → Maximum intervention + alert driver
+│
+CHECK — Is rear collision imminent?
+├─ YES → Deploy safety balloon + flash rear warning lights
+│
+ALL CLEAR → Log system state → return to MONITOR
+
+
+---
+
+## Dashboard
+
+The IVSCS web dashboard provides a real-time heads-up display of all
+system layers. It runs in any modern browser with no installation.
+
+### Panels
+
+**Sensing Panel (left)**
+Five live sensor readouts with colour-coded severity bars:
+- Wheel grip level (μ)
+- Road vibration (Hz)
+- Front obstacle distance (m)
+- Rear approach speed (km/h)
+- Object detection status
+
+**AI Processing Panel (centre)**
+- Rotating radar view with threat markers
+- Collision risk ring (0–100%)
+- Live vehicle speed readout
+- AI decision log with timestamped entries
+
+**Action Panel (right)**
+Four action status indicators:
+- Engine Control Unit state
+- Smart Braking state
+- Anti-Skid Control state
+- Safety Balloon armed / deployed state
+
+Layer 04 Workflow tracker — steps highlight as risk increases.
+
+**Bottom Bar**
+Summary statistics: reaction time / road state / engine torque /
+brake pressure / intervention event count.
+
+### Simulation Scenarios
+
+| Button | What it simulates |
+|--------|------------------|
+| Normal | Baseline cruise — gentle sensor noise only |
+| Slippery | Icy road — anti-skid and torque reduction engage |
+| Object | Pedestrian ahead — emergency braking to safe stop |
+| Rear Hit | Rear collision imminent — safety balloon deploys |
+
+---
+
+## Smart Tyre Sensor — Technical Detail
+
+The most novel component of IVSCS is the embedded piezoelectric sensor
+network inside the tyre rubber.
+
+### Why embedded and not surface-mounted?
+Surface-mounted sensors wear away within months. Embedded sensors are
+protected by the tyre rubber layer and wear proportionally with the
+tyre — providing a tyre life indicator as a secondary function.
+
+### Signal transfer
+The tyre rotates at up to 25 times per second at highway speed. A
+direct wire connection is not possible. Inductive coupling transfers
+both power and data wirelessly across the rotating gap between the
+tyre assembly and the fixed wheel hub — using two coils with no
+physical contact and no wear.
+
+### Road surface detection — signal patterns
+
+| Surface | Signal Pattern | Grip Range |
+|---------|---------------|------------|
+| Dry asphalt | Sharp, consistent pulse | 0.75 – 0.90 μ |
+| Wet road | Dampened, slightly irregular | 0.45 – 0.65 μ |
+| Mud / soft soil | Chaotic, low frequency | 0.20 – 0.40 μ |
+| Sand / gravel | High frequency, low amplitude | 0.25 – 0.45 μ |
+| Ice | Weak, near-flat signal | 0.05 – 0.20 μ |
+
+---
+
+## System Recovery
+
+| Component | Failure | Recovery | Time |
+|-----------|---------|----------|------|
+| Dashboard code | File loss | `git clone` from GitHub | 2 minutes |
+| Arduino / MCU | Hardware failure | Replace unit + re-flash from GitHub | 30 minutes |
+| Inductive coil | Physical damage | Unbolt and replace coil unit | 30 minutes |
+| Tyre sensor | Tyre damage | Replace tyre — new sensors included | Standard tyre change |
+| Camera | Disconnected | Reconnect USB — auto-detected | Instant |
+
+---
+
+## Technology Stack
+
+| Component | Technology |
+|-----------|-----------|
+| Dashboard UI | HTML5, CSS3, Vanilla JavaScript, Canvas API |
+| AI / ML Core | Python, scikit-learn, YOLOv8, OpenCV |
+| Tyre Sensor | PVDF-TrFE polymer film, inductive coupling |
+| Hardware Interface | Arduino Nano / Raspberry Pi, Serial/USB |
+| Actuators | Solenoid valve, pressure sensor, LED array |
+| GPS | Browser Geolocation API |
+| Version Control | GitHub |
+
+---
+
+## Related Files
+
+| File | Description |
+|------|-------------|
+| [`index.html`](index.html) | Live dashboard — open in any browser |
+| [`README.md`](README.md) | Project overview |
+| [`SMART_TYRE_SENSOR.md`](SMART_TYRE_SENSOR.md) | Tyre sensor engineering analysis |
+| [`CAREER_AND_SYSTEM_GUIDE.md`](CAREER_AND_SYSTEM_GUIDE.md) | Career pathway and system recovery |
+| [`IVSCS_dashboard.html`](IVSCS_dashboard.html) | Single-file standalone dashboard |
