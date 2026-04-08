@@ -343,3 +343,17 @@ The internal electronics are built to withstand extreme environments:
 G-Force: The PCB is encapsulated using High-Strength Epoxy Resin (Potting) to prevent component displacement under intense centrifugal force.
 
 Thermal: All components used are Automotive Grade (AEC-Q100), rated to operate reliably up to 180°C.
+
+## ❓ Frequently Asked Questions (Technical R&D)
+
+**Q: How does the system handle high-speed data latency?**
+**A:** We utilize **Edge AI processing** directly within the tire's controller. This bypasses cloud latency, achieving a sub-10ms response time, critical for high-speed safety interventions.
+
+**Q: Is the system vulnerable to environmental degradation (mud/water)?**
+**A:** No. The sensors are embedded within the **tire's inner liner**, hermetically sealed from external elements. The **Inductive Power Transfer** works via magnetic fields, which are unaffected by mud, water, or ice.
+
+**Q: How is the data secured against cyber threats?**
+**A:** Every data stream is protected by **AES-128 encryption** and uses a proprietary handshake protocol to prevent signal spoofing or unauthorized access to the vehicle's ECU.
+
+**Q: What is the power efficiency of the Inductive Coil?**
+**A:** The system targets **85% energy efficiency** in power transfer, ensuring minimal load on the vehicle's electrical system while providing continuous power to the sensor grid.
