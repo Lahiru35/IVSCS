@@ -357,3 +357,59 @@ Thermal: All components used are Automotive Grade (AEC-Q100), rated to operate r
 
 **Q: What is the power efficiency of the Inductive Coil?**
 **A:** The system targets **85% energy efficiency** in power transfer, ensuring minimal load on the vehicle's electrical system while providing continuous power to the sensor grid.
+
+
+
+## 🧠 Technical Deep-Dive: Q&A for Engineering Reviews
+
+To demonstrate the technical viability and rigorous planning behind IVSCS, the following 20 critical engineering questions have been addressed:
+
+### 🏗️ Category 1: Material Science & Durability
+1. **Q: How does the system handle the difference in thermal expansion between the rubber and the sensors?**
+   * **A:** We utilize **flexible conductive polymers**. These materials are designed to stretch and contract in tandem with the tire's rubber, preventing structural fractures during temperature fluctuations.
+2. **Q: Can centrifugal forces at high RPM cause the sensor grid to detach?**
+   * **A:** No. The grid is integrated during the **vulcanization process**, chemically bonding the sensors into the tire structure, making them an intrinsic part of the tire carcass.
+3. **Q: Does sensor sensitivity degrade as the tire ages?**
+   * **A:** The system includes a **self-calibration algorithm** that compensates for material aging by analyzing baseline signal shifts over time.
+4. **Q: Can high internal tire pressure crush the sensors?**
+   * **A:** We use **Solid-state MEMS sensors** rated to withstand pressures 10-20 times higher than standard atmospheric pressure (PSI).
+
+### 📡 Category 2: Electronics & Signal Processing
+5. **Q: How do you prevent signal interference when multiple IVSCS-equipped vehicles are nearby?**
+   * **A:** Each unit uses a **Unique ID (UID)** and **Frequency Hopping Spread Spectrum (FHSS)** technology to ensure zero cross-talk between vehicles.
+6. **Q: Do the tire’s internal steel belts shield or block the wireless signals?**
+   * **A:** The antenna is strategically placed on the outer layer of the carcass, beyond the steel belts, to ensure an unobstructed signal path to the vehicle's receiver.
+7. **Q: How does the system distinguish between road noise and actual slip signals?**
+   * **A:** We implement **Fast Fourier Transform (FFT)** and AI-based digital filters to isolate the specific "slip frequencies" from background road vibrations.
+8. **Q: How is the heating of the inductive coil managed during long drives?**
+   * **A:** By utilizing **Resonant Inductive Coupling**, we maximize energy transfer efficiency (85%+), significantly reducing heat dissipation.
+
+### 🤖 Category 3: Artificial Intelligence & Software
+9. **Q: What dataset was used to train the AI model?**
+   * **A:** The model was trained on thousands of **vibration signatures** captured across various surfaces, including asphalt, concrete, mud, and black ice.
+10. **Q: Is the processor inside the tire powerful enough for real-time AI?**
+    * **A:** Yes, we use **TinyML (Machine Learning for Microcontrollers)**, allowing complex logic to run on ultra-low-power chips like the STM32 series.
+11. **Q: Is a cloud connection mandatory for the safety features?**
+    * **A:** No. All critical safety interventions are processed **locally (Edge Computing)**. The cloud is only used for high-level hazard mapping.
+12. **Q: How are the system's firmware updates handled?**
+    * **A:** Updates are delivered via **OTA (Over-The-Air)** updates from the vehicle's central ECU to the tire units.
+
+### 🛸 Category 4: Advanced Physics & Antigravity
+13. **Q: How is the vehicle controlled when the Antigravity mode is active?**
+    * **A:** The wheels feature a **Secondary Magnetic Propulsion** system that provides directional thrust even when physical contact with the road is minimized.
+14. **Q: Does the rapid lift affect passenger comfort (G-force)?**
+    * **A:** Integrated **Inertial Dampers** modulate the lift acceleration to ensure the transition is smooth and safe for passengers.
+
+### 💼 Category 5: Logistics & Sustainability
+15. **Q: What happens to the sensors if the tire gets a puncture?**
+    * **A:** Sensors are placed deep within the liner, away from common puncture zones. The system immediately triggers a "Puncture Detected" alert.
+16. **Q: Are the sensors discarded when the tire is replaced?**
+    * **A:** While embedded, the PCB components are designed for **material recovery** during the tire recycling process.
+17. **Q: Will this system meet international automotive regulations?**
+    * **A:** We aim for compliance with **UN ECE regulations**, positioning IVSCS as an advanced driver-assistance system (ADAS).
+18. **Q: Does the sensor weight affect wheel balancing?**
+    * **A:** No. The components are **micro-scale (milligrams)** and distributed symmetrically to maintain perfect wheel balance.
+19. **Q: If one sensor in the grid fails, does the whole tire need replacement?**
+    * **A:** No. The system uses a **Redundant Grid Layout**; if one node fails, the surrounding sensors take over the monitoring task.
+20. **Q: What is the roadmap for this project?**
+    * **A:** The next phase involves developing a full-scale hardware prototype for testing in collaboration with tier-1 automotive suppliers.
