@@ -413,3 +413,39 @@ To demonstrate the technical viability and rigorous planning behind IVSCS, the f
     * **A:** No. The system uses a **Redundant Grid Layout**; if one node fails, the surrounding sensors take over the monitoring task.
 20. **Q: What is the roadmap for this project?**
     * **A:** The next phase involves developing a full-scale hardware prototype for testing in collaboration with tier-1 automotive suppliers.
+
+
+
+## 🧠 Intelligent Overtaking Logic: Dynamic Authority Scaling (DAS)
+
+Unlike traditional safety systems that either stay 'On' or 'Off', the IVSCS platform implements a sophisticated balance between **Driver Autonomy** and **System Intervention**. By utilizing **Dynamic Authority Scaling (DAS)**, the system eliminates the need for manual switches or buttons, relying instead on high-frequency sensor fusion to predict driver intent.
+
+### 🛠 How It Works: The 3-Step Intelligence Loop
+
+The system identifies an "Overtaking Maneuver" and adjusts its control logic in real-time through the following stages:
+
+#### 1. Intent Recognition (Multi-Modal Fusion)
+The AI Core processes three distinct data streams to confirm an overtaking intent:
+* **Computer Vision (YOLOv8):** Detects a slower-moving vehicle ahead and identifies available lane space.
+* **Signal Integration:** Monitors the vehicle's turn indicators to confirm a planned maneuver.
+* **Pedal & Steering Dynamics:** Analyzes the rate of accelerator depression and steering angle velocity to detect the physical start of a high-speed pass.
+
+#### 2. Scaling Authority (Context-Aware Power Release)
+Once intent is verified, the system modifies its **Action Layer** behavior:
+* **Torque Limiter Disengagement:** The system temporarily suspends engine torque restrictions, granting the driver 100% available power for a swift and safe overtake.
+* **High-Alert Safety State:** While engine restrictions are lifted, the **Smart Tyre Sensors** increase their sampling rate. The system transitions from a "Prevention Mode" to a "Monitoring Mode."
+
+#### 3. The Invisible Guardian (Non-Intrusive Stability)
+During the maneuver, the system remains a silent protector:
+* **Traction Thresholds:** If the tyre sensors detect a critical drop in road grip (e.g., hitting a patch of oil or water) during the overtake, the AI will not cut the engine power (which could cause a collision). 
+* **Micro-Interventions:** Instead, it applies millisecond-level braking pulses (Active Stability Control) to keep the vehicle on its intended trajectory without the driver feeling a loss of power.
+
+### 📊 Technical Logic Matrix
+
+| Input Feature | Detection Logic | System Response | Driver Experience |
+| :--- | :--- | :--- | :--- |
+| **Vision + Signal** | Overtake Intent | Disengage Torque Limiter | Full engine response |
+| **Accelerator Input** | Acceleration Need | Shift to Performance Map | Smooth, rapid velocity gain |
+| **Smart Tyre Data** | Stability Risk | Activate Background ESC | Secure grip, no "power lag" |
+
+> **"Designed to provide the speed the driver wants, with the intelligence the future requires."**
