@@ -449,3 +449,455 @@ During the maneuver, the system remains a silent protector:
 | **Smart Tyre Data** | Stability Risk | Activate Background ESC | Secure grip, no "power lag" |
 
 > **"Designed to provide the speed the driver wants, with the intelligence the future requires."**
+
+# 🛠 IVSCS — Technical Challenges & Engineering Solutions
+
+> **Intelligent Vehicle Safety & Control System — v2.0**
+> Complete engineering challenge documentation covering core problems, overtaking logic, brake failure safety, and future roadmap.
+
+---
+
+## 📋 Table of Contents
+
+- [Part 1 — Core Engineering Challenges](#part-1--core-engineering-challenges)
+  - [Challenge 01 — Data Latency & Edge Processing](#-challenge-01--data-latency--edge-processing)
+  - [Challenge 02 — Structural Integrity & Extreme Environments](#-challenge-02--structural-integrity--extreme-environments)
+  - [Challenge 03 — Wireless Interference & Cybersecurity](#-challenge-03--wireless-interference--cybersecurity)
+  - [Challenge 04 — Hardware Redundancy & Fail-Safes](#-challenge-04--hardware-redundancy--fail-safes)
+  - [Challenge 05 — Maintenance & Universal Compatibility](#-challenge-05--maintenance--universal-compatibility)
+- [Part 2 — Intelligent Overtaking Logic (DAS)](#part-2--intelligent-overtaking-logic-das)
+  - [The 3-Step Intelligence Loop](#the-3-step-intelligence-loop)
+  - [Indicator-Less Intent Detection](#-indicator-less-intent-detection-solved-gap)
+  - [DAS Exit Conditions](#-das-exit-conditions-solved-gap)
+- [Part 3 — Brake Failure Safety Architecture](#part-3--brake-failure-safety-architecture)
+- [Part 4 — Future Challenges & Pre-Planned Solutions](#part-4--future-challenges--pre-planned-solutions)
+- [Summary Matrices](#-summary-matrices)
+
+---
+
+## Part 1 — Core Engineering Challenges
+
+### 🔴 Challenge 01 — Data Latency & Edge Processing
+
+**The Problem**
+
+At speeds exceeding 120 km/h, the contact patch of a tyre meets the road for only **2–4 milliseconds** per rotation cycle. Transmitting raw sensor data to a central ECU for processing creates a critical *Latency Gap* — by the time the ECU processes the data and sends a response, the tyre has already moved past the hazard point.
+
+> ⚠️ **At 120 km/h the vehicle travels 3.3 cm per millisecond. A 15ms latency = 50 cm of uncontrolled road.**
+
+**✅ Engineering Solution — Edge AI Computing**
+
+- **On-Sensor Processing:** An ultra-low-power microcontroller (ARM Cortex-M0+) embedded near the tyre performs initial signal filtering and feature extraction *before* transmission — decisions happen in microseconds, not milliseconds.
+- **Pre-emptive Algorithms:** The AI detects vibration signatures that *precede* a skid, not reacting after grip is lost.
+- **Two-tier architecture:** Edge node handles microsecond decisions; central ECU handles macro-level strategy and logging.
+
+---
+
+### 🟠 Challenge 02 — Structural Integrity & Extreme Environments
+
+**The Problem**
+
+Tyres undergo continuous cyclic deformation at up to **800 rotations per minute**, centrifugal forces exceeding **50G** at the tread, and temperatures ranging from **-20°C to 120°C**. Standard rigid PCBs would crack, delaminate, or detach within days.
+
+**✅ Engineering Solution — Flexible Electronics & Smart Placement**
+
+- **Flexible PCBs (FPC):** Polyimide-based circuits that bend and stretch with the tyre sidewall — tested to 10 million flex cycles.
+- **Bead-Area Mounting:** Critical electronics placed near the tyre bead (coolest, least-deformed zone). Only PVDF sensor filaments extend to the tread belt interface.
+- **Vulcanized Embedding:** Sensors integrated during tyre manufacturing — bonded into the rubber compound, not surface-attached.
+- **High-Curie PVDF-TrFE:** Piezoelectric material retains sensitivity up to 110°C — well within tyre operating range.
+
+---
+
+### 🔵 Challenge 03 — Wireless Interference & Cybersecurity
+
+**The Problem**
+
+Multiple smart tyre systems on the same vehicle, plus nearby vehicles, create potential for signal cross-talk. Unencrypted wireless tyre data is also vulnerable to **False Data Injection attacks** — where an adversary broadcasts fake grip data to trigger phantom braking at highway speed.
+
+**✅ Engineering Solution — Secure Communication Protocols**
+
+- **AES-128 Encryption:** All tyre-to-ECU data encrypted with a rotating session key — impossible to decode in real time.
+- **TDM (Time-Division Multiplexing):** Each wheel assigned a unique digital ID and a **12.5ms transmission slot** — four wheels transmit in sequence, no overlap or cross-talk.
+- **Signal Authentication:** Each packet includes a cryptographic hash — corrupted or injected data is rejected before processing.
+
+---
+
+### 🟢 Challenge 04 — Hardware Redundancy & Fail-Safes
+
+**The Problem**
+
+A single sensor node failure (from road debris, puncture, or manufacturing defect) could feed garbage data to the AI risk engine, causing dangerous phantom interventions — unexpected braking at highway speed.
+
+**✅ Engineering Solution — Triple Modular Redundancy (TMR)**
+
+- **Multi-Sensor Voting:** Each tyre contains multiple independent sensor nodes. The AI applies voting logic — if one node's reading deviates significantly from the others, it is flagged and excluded automatically.
+- **Graceful Degradation:** On total sensor failure, IVSCS enters **Passive Mode** — alerting the driver and handing full control to the vehicle's standard ABS/ESC systems. The safety baseline is always maintained.
+- **Dashboard Health Indicator:** All four tyre sensor nodes displayed in real time — green / amber / red status per node.
+
+---
+
+### 🔵 Challenge 05 — Maintenance & Universal Compatibility
+
+**The Problem**
+
+Traditional tyre shops have no equipment or training for smart tyre handling. Different tyre brands have different rubber compounds, belt constructions, and vibration signatures — a model trained on Brand A tyres would be inaccurate on Brand B.
+
+**✅ Engineering Solution — Auto-Calibration & Hub-Centric Logic**
+
+- **Self-Learning Algorithm:** On first 5 km after installation, the system enters **Learning Phase** — baseline vibration profiles captured, ML model auto-calibrated to the new tyre's signature.
+- **Visual Sensor Zone Indicators:** Coloured markings on the tyre sidewall show technicians the exact location of embedded hardware — preventing accidental damage during tyre changes.
+- **Universal API:** Hub-side inductive receiver is tyre-brand agnostic — any future smart tyre that meets the NFC protocol spec will pair automatically.
+
+---
+
+### 📊 Part 1 — Summary Matrix
+
+| Challenge Category | Primary Risk | Engineering Mitigation | Severity |
+| :--- | :--- | :--- | :---: |
+| **Connectivity** | Signal Interference / Hacking | AES-128 Encryption + TDM ID Mapping | 🔴 High |
+| **Durability** | Heat & Mechanical Stress | Flexible PCBs + High-Curie PVDF-TrFE | 🔴 High |
+| **Logic** | Processing Lag (Latency) | Edge AI — On-Device Inference (Cortex-M0+) | 🔴 Critical |
+| **Reliability** | Hardware Failure / Garbage Data | TMR Voting Logic + Graceful Degradation | 🔴 Critical |
+| **Maintenance** | Incompatibility / Technician Error | Auto-Calibration + Visual Zone Markers | 🟡 Medium |
+
+---
+
+## Part 2 — Intelligent Overtaking Logic (DAS)
+
+**Dynamic Authority Scaling (DAS)** balances driver autonomy with system protection. Rather than a simple ON/OFF safety toggle, DAS continuously adjusts system behaviour based on verified driver intent and real-time road conditions.
+
+### The 3-Step Intelligence Loop
+
+#### Step 1 — Intent Recognition (Multi-Modal Fusion)
+
+The AI core processes three simultaneous data streams to confirm overtaking intent:
+
+| Data Source | What It Detects | Threshold |
+| :--- | :--- | :--- |
+| **YOLOv8 Camera** | Slower vehicle ahead + available lane gap | Min. 1.5 vehicle lengths |
+| **Turn Signal** | Indicator active (confirmatory signal) | ON state |
+| **Pedal & Steering** | Accelerator rate `dA/dt` + steering angle velocity `dθ/dt` | >15% throttle / 100ms |
+
+#### Step 2 — Scaling Authority (Context-Aware Power Release)
+
+Once intent is verified, the system modifies its Action Layer behaviour:
+
+- **Torque Limiter Disengagement:** Engine torque restrictions temporarily suspended — driver receives 100% available power.
+- **Increased Sampling Rate:** Smart tyre sensors switch from **50ms → 16ms** polling (3× higher resolution during manoeuvre).
+- **High-Alert State:** System transitions from *Prevention Mode* to *Monitoring Mode*.
+
+#### Step 3 — Invisible Guardian (Non-Intrusive Stability)
+
+During the manoeuvre, IVSCS remains a silent protector:
+
+- **Grip Threshold Protection:** If tyre sensors detect critical grip reduction (oil, water) during overtake, the AI does **NOT** cut engine power — which would cause a collision with the vehicle being overtaken.
+- **Micro-Interventions:** Millisecond-level individual wheel braking pulses (Active Stability Control) maintain trajectory without noticeable power lag to the driver.
+
+#### DAS Overtaking Flow
+
+```
+OVERTAKING INTENT DETECTION FLOW
+═══════════════════════════════════════════════════════════════
+
+  [ YOLOv8 Camera ]   [ Turn Signal ]   [ Pedal/Steering ]
+         │                   │                   │
+         └───────────────────┴───────────────────┘
+                             │
+                    [ Multi-Modal Fusion ]
+                             │
+              ┌──────────────┴──────────────┐
+              │   All signals confirmed?     │
+              └──────────────┬──────────────┘
+                    YES ─────┴───── NO
+                     │               │
+           [DAS ACTIVE]         [Normal Mode]
+                     │
+         ┌───────────┴────────────┐
+         │  Torque Limiter OFF    │
+         │  Tyre Sampling ×3     │
+         │  Enter HIGH-ALERT     │
+         └───────────┬────────────┘
+                     │
+            [ Grip Drop Detected? ]
+                     │
+              YES ───┴─── NO
+               │           │
+ [Micro-braking pulses]  [Full Power Maintained]
+ [NO engine cut — avoids
+  collision with oncoming]
+               │           │
+               └─────┬─────┘
+                     │
+        [ Lane Return / Timer > 8s / TTC < 3s ]
+                     │
+              YES ───┘
+               │
+        [ DAS DEACTIVATED — Normal Mode ]
+
+═══════════════════════════════════════════════════════════════
+```
+
+---
+
+### ⚠️ Indicator-Less Intent Detection (Solved Gap)
+
+> **Real-world problem:** In Sri Lanka and many regions, drivers frequently overtake **without using turn indicators**. The original DAS design required indicator input — this is the engineering fix.
+
+When indicator signal is absent, DAS activates a **two-signal fallback** using inputs already present in the IVSCS sensor suite:
+
+- **Accelerator Rate Threshold:** Rapid depression exceeding 15% throttle increase per 100ms signals performance intent.
+- **Steering Angle Velocity:** Angular rate exceeding 5°/second in lateral direction confirms physical lane departure movement.
+- **Weighted Confidence Score:** `Acc(40%) + Steering(40%) + Camera gap(20%)` — threshold **0.75** to activate DAS without indicator.
+
+```
+INDICATOR-LESS INTENT DETECTION (Fallback Logic)
+═══════════════════════════════════════════════════════════════
+
+  Problem: Driver overtakes WITHOUT using turn signal
+
+  Signal Sources (No indicator needed):
+
+   [Accelerator Rate]   [Steering Angle Vel.]   [Camera]
+   dA/dt > threshold    dθ/dt > threshold       Lane gap
+          │                      │                 │
+          └──────────────────────┴─────────────────┘
+                                 │
+                  [ Weighted Confidence Score ]
+                  Acc(40%) + Steering(40%) + Vision(20%)
+                                 │
+                      Score > 0.75?
+                   YES ──────────┴────── NO
+                    │                     │
+              [DAS Activates]     [Monitor Only]
+
+═══════════════════════════════════════════════════════════════
+```
+
+---
+
+### 🔄 DAS Exit Conditions (Solved Gap)
+
+DAS does not stay active indefinitely. Any one of the following conditions independently triggers return to Normal Mode:
+
+| Exit Trigger | Detection Logic | Response Time |
+| :--- | :--- | :--- |
+| **Lane Return** | Steering angle reversal detected | Immediate — 1 cycle (50ms) |
+| **Timeout** | DAS active > 8 continuous seconds | Gradual — 500ms ramp-down |
+| **Aborted Overtake** | Speed drops > 20 km/h mid-manoeuvre | Immediate |
+| **Collision Risk** | Oncoming vehicle TTC < 3 seconds | Forced emergency exit |
+
+```
+DAS LIFECYCLE — ENTRY TO EXIT
+═══════════════════════════════════════════════════════════════
+
+  NORMAL MODE ──► INTENT DETECTED ──► DAS ACTIVE
+       ▲                                    │
+       │                                    ▼
+  DAS EXIT ◄── [Exit Conditions Met?] ◄── MONITORING
+
+  DAS Exit Conditions (ANY ONE triggers exit):
+  ┌──────────────────────────────────────────────┐
+  │  1. Lane return detected (steering reversal) │
+  │  2. Timer > 8 seconds                        │
+  │  3. Speed drops > 20 km/h (aborted overtake) │
+  │  4. Oncoming object TTC < 3s (abort forced)  │
+  └──────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════
+```
+
+---
+
+## Part 3 — Brake Failure Safety Architecture
+
+### Industry Baseline — Dual Hydraulic Circuits
+
+Modern vehicles already use a split hydraulic brake circuit as a legal requirement (EU Directive 71/320/EEC):
+
+- **Circuit A** controls Front-Left + Rear-Right wheels
+- **Circuit B** controls Front-Right + Rear-Left wheels
+- If one circuit fails completely, the remaining circuit provides ~**50% braking force** — sufficient to stop the vehicle safely
+
+> ✅ **IVSCS operates above this baseline — adding a predictive layer that detects degradation before total failure occurs.**
+
+---
+
+### IVSCS Pre-Failure Detection Layer
+
+| Detection Event | IVSCS Response |
+| :--- | :--- |
+| Pressure drop < 10% | Log + monitor — no driver alert |
+| Pressure drop 10–30% | HUD warning + lower threshold to 55 + speed cap |
+| Pressure drop 30–60% | Urgent alert + threshold to 45 + navigate to service |
+| Pressure drop > 60% | Full intervention + engine braking + balloon armed |
+| Both circuits down | Engine off + hazard lights + emergency stop sequence |
+
+```
+BRAKE SYSTEM REDUNDANCY & FAILURE RESPONSE
+═══════════════════════════════════════════════════════════════
+
+  DUAL HYDRAULIC CIRCUIT (Industry Standard + IVSCS Layer)
+
+   ┌─────────────────────────────────────────────────┐
+   │              IVSCS AI Core (50ms loop)          │
+   └───────────────────┬─────────────────────────────┘
+                       │
+         ┌─────────────┴──────────────┐
+         │                            │
+   [Circuit A]                  [Circuit B]
+   FL + RR tyres                FR + RL tyres
+         │                            │
+   [Pressure Sensor A]         [Pressure Sensor B]
+         │                            │
+         └─────────────┬──────────────┘
+                       │
+            [ Pressure Anomaly? ]
+                YES ───┤─── NO
+                 │         │
+   [IVSCS PRE-FAILURE  [Normal ops]
+    ALERT TRIGGERED]
+                 │
+      ┌──────────┴──────────┐
+      │ Risk threshold      │
+      │ lowered: 70 → 45   │
+      │ Speed cap applied   │
+      │ Driver HUD warning  │
+      └──────────┬──────────┘
+                 │
+       [Total Failure Detected?]
+                YES
+                 │
+   [ GRACEFUL DEGRADATION MODE ]
+   → Hand over to ABS/ESC
+   → Engine torque = 0 (engine braking)
+   → Rear balloon armed
+   → Emergency hazard lights ON
+
+═══════════════════════════════════════════════════════════════
+```
+
+---
+
+## Part 4 — Future Challenges & Pre-Planned Solutions
+
+As IVSCS matures toward v3.0 and Vision 2030, new engineering challenges emerge. These are anticipated and documented *before* they become blocking problems.
+
+---
+
+### 🔐 Future Challenge 01 — Fleet-Scale Data Privacy
+
+**The Problem**
+
+When IVSCS vehicles share road hazard data via a cloud fleet map, each data packet reveals precise GPS coordinates, speed, and road behaviour of individual vehicles — creating a mass vehicle surveillance dataset.
+
+**Pre-Planned Solution**
+
+- **Differential Privacy:** Gaussian noise injected into GPS coordinates before upload — precise enough for hazard mapping, imprecise enough to prevent individual tracking.
+- **Zero-Knowledge Proof Reporting:** A vehicle can prove it detected ice at coordinate X without revealing its own identity or full route.
+- **On-Device Aggregation:** Raw GPS logs never leave the vehicle — only summarised road condition vectors are uploaded.
+
+---
+
+### 🧊 Future Challenge 02 — Black Ice False Negative *(Highest Priority)*
+
+**The Problem**
+
+Black ice is optically identical to wet asphalt and produces a near-flat PVDF signal at low speeds. At 80 km/h, the system may classify black ice (μ = 0.05–0.12) as *Wet Road* (μ = 0.45–0.65).
+
+> 🔴 **One misclassification on black ice at 100 km/h: required stopping distance = 100m, actual stopping distance = 450m.**
+
+**Pre-Planned Solution**
+
+- **Thermal Sensor Fusion:** Infrared road temperature sensor (MLX90614) — ice forms at 0°C surface temperature, asphalt does not. Cross-referenced with PVDF signal.
+- **Humidity + Temperature Cross-Check:** If air temp < 3°C and humidity > 80%, system automatically shifts classification priors toward ice.
+- **Fleet Confirmation:** If another vehicle reported low grip at this GPS coordinate within 5 minutes, local system enters pre-emptive low-grip mode.
+
+---
+
+### 🤖 Future Challenge 03 — Adversarial AI Attacks
+
+**The Problem**
+
+Adversarial patch attacks — small stickers on road signs or vehicles — can cause the AI to misclassify objects. A STOP sign with an adversarial patch could be classified as *Speed Limit 80*.
+
+**Pre-Planned Solution**
+
+- **Ensemble Detection:** Two independent vision models (YOLOv8 + secondary lightweight model) must agree on classification — adversarial patches that fool one rarely fool both simultaneously.
+- **Physical Sensor Cross-Validation:** Camera classification cross-checked with ultrasonic distance and tyre vibration — a *detected clear road* that contradicts tyre data triggers manual review mode.
+- **Adversarial Training:** Model retrained quarterly with known adversarial examples.
+
+---
+
+### 🔧 Future Challenge 04 — Inductive Coil Wear at High Speed
+
+**The Problem**
+
+The inductive coupling coil on the brake calliper bracket is subject to vibration from road imperfections. Over 100,000 km, micro-fractures cause **intermittent data loss** — harder to detect than total failure.
+
+**Pre-Planned Solution**
+
+- **RSSI Trend Monitoring:** Every data packet includes signal strength metric. Gradual RSSI degradation over weeks = coil wear indicator *before* failure.
+- **Predictive Replacement Alert:** When 30-day degradation rate exceeds threshold, driver receives maintenance notification.
+- **Vibration-Damped Mounting:** Silicon-rubber isolator between coil bracket and calliper — reduces vibration transmission by 60%.
+
+---
+
+### 📋 Future Challenge 05 — Regulatory & Legal Certification
+
+**The Problem**
+
+For IVSCS to be fitted to production vehicles, it must pass **ISO 26262** (automotive functional safety), **UN Regulation 79** (automated steering), and GDPR compliance for fleet data. These processes take 3–5 years and cost millions.
+
+**Pre-Planned Solution**
+
+- **ASIL-D Compliant Architecture from the Start:** Build with ISO 26262 ASIL-D requirements now — retrofitting compliance is 10× more expensive.
+- **Open Safety Data:** Publishing IVSCS test data publicly accelerates regulatory review and builds institutional trust.
+- **Tier-1 Partnership Pathway:** Target a Tier-1 supplier (Bosch, Continental, ZF) for co-development — they have existing type approval relationships with regulators.
+
+---
+
+### 🧬 Future Challenge 06 — Self-Healing Circuit Reliability
+
+**The Problem**
+
+The Vision 2030 bio-inspired self-healing circuitry (microfluidic conductive polymer release) introduces a new failure mode: if the reservoir is punctured or polymer degrades in cold temperatures, the self-healing system fails **silently** — the tyre appears fully functional on the dashboard while sensor coverage is actually reduced.
+
+**Pre-Planned Solution**
+
+- **Reservoir Pressure Monitoring:** A micro-pressure sensor in each reservoir detects depletion or rupture — alerts system that self-healing capacity is reduced in that sector.
+- **Cold-Weather Polymer Formulation:** Conductive polymer matrix tested across -30°C to +100°C — glycol-based carrier fluid for cold climate reliability.
+- **Redundant Coverage Mapping:** Even with partial self-healing failure, remaining sensors provide coverage — system logs reduced-coverage zones and compensates with higher-weight inputs from functional sectors.
+
+---
+
+## 📊 Summary Matrices
+
+### Future Challenges Overview
+
+| Challenge | Core Risk | Pre-Planned Solution | Target Version |
+| :--- | :--- | :--- | :---: |
+| **Fleet Data Privacy** | Mass surveillance risk | Differential Privacy + ZKP reporting | 2026–27 |
+| **Black Ice False Negative** | Catastrophic stopping failure | IR thermal + humidity + fleet confirmation | v2.5 |
+| **Adversarial AI Attack** | Vision system spoofing | Ensemble models + physical cross-validation | v3.0 |
+| **Inductive Coil Wear** | Intermittent data loss | RSSI trend monitoring + vibration isolation | v2.5 |
+| **Regulatory Certification** | 3–5yr ISO 26262 barrier | ASIL-D design + Tier-1 partnership | Long-term |
+| **Self-Healing Reliability** | Silent failure of healing system | Reservoir pressure + polymer cold testing | Vision 2030 |
+
+### DAS Quick Reference
+
+| Input Feature | Detection Logic | System Response | Driver Experience |
+| :--- | :--- | :--- | :--- |
+| **Vision + Signal** | Overtake Intent Confirmed | Disengage Torque Limiter | Full engine response |
+| **Accelerator Input** | Acceleration Need | Shift to Performance Map | Smooth, rapid velocity gain |
+| **Smart Tyre Data** | Stability Risk During Pass | Activate Background ESC | Secure grip, no power lag |
+| **Grip Drop During Pass** | Critical friction loss | Micro-braking pulses (NOT engine cut) | Stable trajectory maintained |
+
+---
+
+> *"Engineering a safer future requires solving today's physical limitations with tomorrow's intelligent logic — and anticipating the challenges after that."*
+>
+> **IVSCS v2.0 — Technical Documentation**
+
+---
+
+*See also: [`HOW_IT_WORKS.md`](HOW_IT_WORKS.md) · [`SMART_TYRE_SENSOR.md`](SMART_TYRE_SENSOR.md) · [`Vision_2030.md`](Vision_2030.md)*
