@@ -16,6 +16,10 @@
 - [Author](#-author)
 - [License](#-license)
 
+- ++
+[IVSCS_MASTER_ENGINEERING_DOCUMENT.docx](https://github.com/user-attachments/files/26854343/IVSCS_MASTER_ENGINEERING_DOCUMENT.docx)
+
+
 ## 🔧 Hardware Requirements (for Physical Prototype)
 
 | Component | Specification | Estimated Cost (Sri Lanka) |
