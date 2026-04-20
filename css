@@ -1,0 +1,357 @@
+/* ═══════════════════════════════════════════════════════════════
+   IVSCS — Intelligent Vehicle Safety & Control System
+   Stylesheet
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Reset & Root Variables ────────────────────────────────────── */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --accent:   #00e5ff;
+  --accent2:  #ff6b35;
+  --accent3:  #39ff14;
+  --warn:     #ffd600;
+  --danger:   #ff1744;
+  --bg:       #040d1a;
+  --panel:    #071428;
+  --panel2:   #0a1f3d;
+  --border:   rgba(0, 229, 255, 0.15);
+  --text:     #c8e6f7;
+  --mono:     'Share Tech Mono', monospace;
+  --sans:     'Exo 2', sans-serif;
+}
+
+body {
+  background:  var(--bg);
+  color:       var(--text);
+  font-family: var(--sans);
+  min-height:  100vh;
+  overflow-x:  hidden;
+}
+
+/* ── Keyframe Animations ────────────────────────────────────────── */
+@keyframes pulse     { 0%,100%{opacity:1}  50%{opacity:.4} }
+@keyframes scan      { 0%{transform:translateY(-100%)} 100%{transform:translateY(400%)} }
+@keyframes spin      { to{transform:rotate(360deg)} }
+@keyframes blink     { 0%,100%{opacity:1}  50%{opacity:0} }
+@keyframes warn-flash{ 0%,100%{background:rgba(255,23,68,0.15)} 50%{background:rgba(255,23,68,0.4)} }
+@keyframes ripple    { 0%{transform:scale(1);opacity:.7} 100%{transform:scale(2.5);opacity:0} }
+@keyframes slide-in  { from{transform:translateX(100%);opacity:0} to{transform:translateX(0);opacity:1} }
+@keyframes float     { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-4px)} }
+
+/* ── HUD Layout ─────────────────────────────────────────────────── */
+.hud {
+  display:             grid;
+  grid-template-rows:  auto 1fr auto;
+  min-height:          100vh;
+  padding:             12px;
+  gap:                 10px;
+}
+
+/* ── Header ─────────────────────────────────────────────────────── */
+.header {
+  display:         flex;
+  align-items:     center;
+  justify-content: space-between;
+  padding:         10px 20px;
+  background:      var(--panel);
+  border:          1px solid var(--border);
+  border-radius:   8px;
+  position:        relative;
+  overflow:        hidden;
+}
+
+.header::before {
+  content:    '';
+  position:   absolute;
+  top:        0; left: 0; right: 0;
+  height:     1px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  animation:  pulse 2s infinite;
+}
+
+.header-title {
+  font-size:      11px;
+  letter-spacing: 3px;
+  color:          var(--accent);
+  font-family:    var(--mono);
+  text-transform: uppercase;
+}
+
+.header-main {
+  font-size:      20px;
+  font-weight:    700;
+  color:          #fff;
+  letter-spacing: 1px;
+}
+
+.time-display {
+  font-family: var(--mono);
+  font-size:   13px;
+  color:       var(--accent);
+  text-align:  right;
+}
+
+/* ── Status Badge ───────────────────────────────────────────────── */
+.status-badge {
+  display:        flex;
+  align-items:    center;
+  gap:            6px;
+  padding:        5px 12px;
+  border-radius:  20px;
+  font-size:      11px;
+  font-family:    var(--mono);
+  letter-spacing: 1px;
+  border:         1px solid;
+}
+
+.status-badge.active  { color: var(--accent3); border-color: var(--accent3); background: rgba(57,255,20,0.08); }
+.status-badge.warning { color: var(--warn);    border-color: var(--warn);    background: rgba(255,214,0,0.08); animation: pulse 1s infinite; }
+.status-badge.danger  { color: var(--danger);  border-color: var(--danger);  animation: warn-flash 0.5s infinite; }
+
+.dot {
+  width:         7px;
+  height:        7px;
+  border-radius: 50%;
+  background:    currentColor;
+}
+.dot.pulse { animation: pulse 1s infinite; }
+
+/* ── Main Grid ──────────────────────────────────────────────────── */
+.main-grid {
+  display:               grid;
+  grid-template-columns: 280px 1fr 280px;
+  gap:                   10px;
+}
+
+.left-col, .right-col { display: flex; flex-direction: column; gap: 10px; }
+.center-col           { display: flex; flex-direction: column; gap: 10px; align-items: center; }
+
+/* ── Panel Base ─────────────────────────────────────────────────── */
+.panel {
+  background:    var(--panel);
+  border:        1px solid var(--border);
+  border-radius: 8px;
+  padding:       14px;
+  position:      relative;
+  overflow:      hidden;
+}
+
+.panel-title {
+  font-size:      9px;
+  letter-spacing: 3px;
+  color:          var(--accent);
+  font-family:    var(--mono);
+  text-transform: uppercase;
+  margin-bottom:  14px;
+  display:        flex;
+  align-items:    center;
+  gap:            6px;
+}
+
+.panel-title::before {
+  content:       '';
+  display:       block;
+  width:         3px;
+  height:        12px;
+  background:    var(--accent);
+  border-radius: 2px;
+}
+
+/* ── Sensor Items ───────────────────────────────────────────────── */
+.sensor-grid { display: grid; gap: 10px; }
+
+.sensor-item {
+  background:    var(--panel2);
+  border:        1px solid var(--border);
+  border-radius: 6px;
+  padding:       10px 12px;
+  cursor:        pointer;
+  transition:    border-color 0.2s, background 0.2s;
+}
+.sensor-item:hover   { border-color: var(--accent); background: rgba(0,229,255,0.05); }
+.sensor-item.active  { border-color: var(--accent3); }
+.sensor-item.warning { border-color: var(--warn); }
+.sensor-item.danger  { border-color: var(--danger); animation: warn-flash 1s infinite; }
+
+.sensor-label {
+  font-size:      9px;
+  letter-spacing: 2px;
+  color:          #6a8faf;
+  font-family:    var(--mono);
+  text-transform: uppercase;
+  margin-bottom:  6px;
+}
+
+.sensor-value {
+  font-size:   22px;
+  font-weight: 700;
+  font-family: var(--mono);
+  line-height: 1;
+}
+.sensor-value span { font-size: 11px; font-weight: 400; color: #6a8faf; margin-left: 3px; }
+
+.sensor-bar { height: 3px; background: rgba(255,255,255,0.08); border-radius: 2px; margin-top: 8px; overflow: hidden; }
+.sensor-bar-fill { height: 100%; border-radius: 2px; transition: width 0.5s ease, background 0.3s; }
+
+/* ── Radar Wrap ─────────────────────────────────────────────────── */
+.radar-wrap {
+  position:    relative;
+  width:       260px;
+  height:      260px;
+  flex-shrink: 0;
+}
+
+#radar-canvas { position: absolute; top: 0; left: 0; }
+
+.scan-line {
+  position:        absolute;
+  top:             0;
+  left:            50%;
+  width:           50%;
+  height:          2px;
+  background:      linear-gradient(90deg, transparent, var(--accent));
+  transform-origin: left center;
+  animation:       spin 3s linear infinite;
+  opacity:         0.7;
+}
+
+/* ── Risk Ring ──────────────────────────────────────────────────── */
+.risk-ring {
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  position:        relative;
+  width:           100px;
+  height:          100px;
+  margin:          0 auto 10px;
+}
+.risk-ring svg { position: absolute; top: 0; left: 0; }
+
+.risk-val {
+  font-size:   24px;
+  font-weight: 700;
+  font-family: var(--mono);
+  text-align:  center;
+}
+.risk-label {
+  font-size:      9px;
+  letter-spacing: 2px;
+  color:          #6a8faf;
+  font-family:    var(--mono);
+  text-align:     center;
+}
+
+/* ── AI Log ─────────────────────────────────────────────────────── */
+.ai-log {
+  font-size:   11px;
+  font-family: var(--mono);
+  color:       var(--accent3);
+  line-height: 1.8;
+}
+.ai-log .ts   { color: #4a6f8f; margin-right: 6px; }
+.ai-log .cmd  { color: var(--accent2); }
+.ai-log .safe { color: var(--accent3); }
+.ai-log .warn { color: var(--warn); }
+.ai-log .err  { color: var(--danger); }
+
+/* ── Action Buttons ─────────────────────────────────────────────── */
+.action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+.action-btn {
+  background:    var(--panel2);
+  border:        1px solid var(--border);
+  border-radius: 6px;
+  padding:       12px 10px;
+  text-align:    center;
+  cursor:        pointer;
+  transition:    all 0.2s;
+  position:      relative;
+  overflow:      hidden;
+}
+.action-btn:hover  { border-color: var(--accent); transform: translateY(-1px); }
+.action-btn.active { border-color: var(--accent2); background: rgba(255,107,53,0.1); }
+.action-btn.fired  { border-color: var(--danger);  background: rgba(255,23,68,0.15); animation: warn-flash 0.4s 3; }
+
+.action-icon  { font-size: 20px; margin-bottom: 4px; }
+.action-name  { font-size: 9px; letter-spacing: 2px; font-family: var(--mono); color: var(--text); text-transform: uppercase; }
+.action-state { font-size: 10px; font-family: var(--mono); color: #6a8faf; margin-top: 3px; }
+
+/* ── Workflow Steps ─────────────────────────────────────────────── */
+.wf-step {
+  padding:       8px 10px;
+  border-radius: 6px;
+  border:        1px solid var(--border);
+  background:    var(--panel2);
+  font-size:     10px;
+  font-family:   var(--mono);
+  transition:    all 0.3s;
+}
+.wf-num { color: var(--accent); }
+.wf-lbl { color: #6a8faf; }
+
+/* ── Scenario Buttons ───────────────────────────────────────────── */
+.scenario-bar { display: flex; gap: 8px; margin-top: 10px; }
+
+.scen-btn {
+  flex:           1;
+  padding:        7px 6px;
+  background:     var(--panel2);
+  border:         1px solid var(--border);
+  border-radius:  6px;
+  color:          var(--text);
+  font-family:    var(--mono);
+  font-size:      9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  cursor:         pointer;
+  transition:     all 0.2s;
+  text-align:     center;
+}
+.scen-btn:hover  { border-color: var(--accent);  color: var(--accent); }
+.scen-btn.active { border-color: var(--accent2); color: var(--accent2); background: rgba(255,107,53,0.1); }
+
+/* ── Safety Balloon ─────────────────────────────────────────────── */
+.balloon-deployed {
+  position:        absolute;
+  bottom:          -10px;
+  left:            50%;
+  transform:       translateX(-50%);
+  width:           60px;
+  height:          60px;
+  border-radius:   50%;
+  background:      radial-gradient(circle, rgba(255,107,53,0.6), rgba(255,107,53,0.1));
+  border:          2px solid var(--accent2);
+  display:         none;
+  align-items:     center;
+  justify-content: center;
+  font-size:       9px;
+  font-family:     var(--mono);
+  color:           var(--accent2);
+  letter-spacing:  1px;
+  animation:       float 1s ease-in-out infinite;
+}
+.balloon-deployed.show { display: flex; }
+
+/* ── Bottom Stat Cards ──────────────────────────────────────────── */
+.bottom-bar {
+  display:               grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap:                   8px;
+}
+
+.stat-card {
+  background:    var(--panel);
+  border:        1px solid var(--border);
+  border-radius: 8px;
+  padding:       10px 14px;
+  text-align:    center;
+}
+
+.stat-label { font-size: 9px; letter-spacing: 2px; color: #6a8faf; font-family: var(--mono); text-transform: uppercase; }
+.stat-val   { font-size: 20px; font-weight: 700; font-family: var(--mono); color: var(--accent); margin: 2px 0; }
+.stat-unit  { font-size: 10px; color: #6a8faf; font-family: var(--mono); }
