@@ -1,5 +1,20 @@
 # Vision 2030 — The Evolution into Living Infrastructure
+## 🚀 Future Roadmap: From Prototype to Industrial Standard (Vision 2030)
 
+To achieve **ISO 26262 (ASIL-D)** compliance and transition into a production-grade safety system, IVSCS will evolve through the following layers:
+
+### 1. Safety & Redundancy Layer
+- **Fail-Safe ECU Redundancy:** Implementation of dual-ECU failover systems with <5ms transition latency.
+- **Black Box Telemetry:** Local SQLite event logging to record sensor states and intervention triggers for post-incident forensic analysis.
+- **Kalman Filter Integration:** Fusing data from Piezo sensors, Vision systems, and Ultrasonic sensors to generate a unified **Confidence Score**.
+
+### 2. Predictive IQ Layer
+- **Trajectory Forecasting:** Using physics-based modeling ($$s = ut + 0.5at^2$$) to predict vehicle path 3 seconds into the future.
+- **Driver Profiling:** Monitoring behavior patterns to detect driver fatigue and reaction time degradation.
+
+### 3. V2X & Digital Twin
+- **Vehicle-to-Everything (V2X):** Mesh networking via DSRC/BLE for instantaneous hazard sharing between vehicles.
+- **Digital Twin Synchronization:** Real-time state comparison between the physical vehicle and its MATLAB/Simulink digital twin to detect sensor drift or mechanical faults.
 > The IVSCS project transcends traditional automotive safety by reimagining the tyre as a conscious, self-sustaining, and diagnostic organ of the vehicle.
 
 ---
